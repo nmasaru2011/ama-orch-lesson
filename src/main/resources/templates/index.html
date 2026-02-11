@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>練習まとめツール</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+        }
+
+        .menu-list li {
+            margin-bottom: 15px;
+        }
+
+        .menu-link {
+            display: block;
+            padding: 15px 20px;
+            background-color: #e3f2fd;
+            border-radius: 6px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .menu-link:hover {
+            background-color: #bbdefb;
+            text-decoration: none;
+        }
+
+        .menu-link .description {
+            display: block;
+            font-size: 14px;
+            font-weight: normal;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>練習まとめツール</h1>
+
+        <ul class="menu-list">
+            <li>
+                <a href="/rehearsal" class="menu-link">
+                    練習まとめ - SRT分析ツール
+                    <span class="description">YouTubeの字幕ファイル（SRT）を分析して、練習中の指摘内容を抽出・整理します</span>
+                </a>
+            </li>
+            <li>
+                <a href="/license" class="menu-link">
+                    使用OSSライセンス情報
+                    <span class="description">本アプリケーションで使用しているオープンソースソフトウェアのライセンス一覧</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+
+</html>

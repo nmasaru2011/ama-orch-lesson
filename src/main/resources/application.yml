@@ -1,0 +1,23 @@
+server:
+    port: 8081
+spring:
+  application:
+    name: LessonApplication
+  datasource:
+    url: jdbc:h2:mem:lessondb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: false
+    defer-datasource-initialization: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8

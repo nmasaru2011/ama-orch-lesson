@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean:*)",
+      "Bash(mvn compile:*)",
+      "Bash(cmd /c:*)",
+      "Bash(findstr:*)",
+      "Bash(Get-Process)",
+      "Bash(Where-Object ProcessName -eq \"java\")",
+      "Bash(Select-Object Id,ProcessName,StartTime)",
+      "Bash(Format-Table)",
+      "Bash(powershell.exe:*)",
+      "Bash(dir:*)",
+      "Bash(./mvnw clean compile:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

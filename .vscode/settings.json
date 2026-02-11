@@ -1,0 +1,20 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
+    "java.format.settings.profile": "GoogleStyle",
+    "editor.formatOnSave": true,
+    "[java]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false,
+        "editor.defaultFormatter": "redhat.java"
+    },
+    "java.compile.nullAnalysis.mode": "automatic",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": ["-NoExit", "-Command", "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8"]
+        }
+    }
+}

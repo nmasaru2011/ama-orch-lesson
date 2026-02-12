@@ -1,7 +1,10 @@
 package com.amaorcnsuaru.lesson.controller;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +24,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.amaorcnsuaru.lesson.resource.RehearsalInstruction;
 import com.amaorcnsuaru.lesson.service.RehearsalSrtService;
+import com.amaorcnsuaru.lesson.service.YouTubeCaptionException;
+import com.amaorcnsuaru.lesson.service.YouTubeCaptionService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -32,6 +37,9 @@ public class RehearsalController {
 	private RehearsalSrtService rehearsalSrtService;
 
 	@Autowired
+	private YouTubeCaptionService youTubeCaptionService;
+
+	@Autowired
 	private ObjectMapper objectMapper;
 
 	@GetMapping
@@ -40,24 +48,37 @@ public class RehearsalController {
 	}
 
 	@PostMapping("/analyze")
-	public String analyze(@RequestParam("file") MultipartFile file,
+	public String analyze(@RequestParam(value = "file", required = false) MultipartFile file,
 			@RequestParam(value = "youtubeUrl", required = false) String youtubeUrl, Model model,
 			HttpSession session, RedirectAttributes redirectAttributes) {
 
-		if (file.isEmpty()) {
-			redirectAttributes.addFlashAttribute("error", "SRTファイルを選択してください");
-			return "redirect:/rehearsal";
-		}
+		boolean hasUrl = youtubeUrl != null && !youtubeUrl.isBlank();
 
-		String filename = file.getOriginalFilename();
-		if (filename == null || !filename.toLowerCase().endsWith(".srt")) {
-			redirectAttributes.addFlashAttribute("error", "SRTファイル (.srt) を選択してください");
+		if (file != null && !file.isEmpty()) {
+			String filename = file.getOriginalFilename();
+			if (filename == null || !filename.toLowerCase().endsWith(".srt")) {
+				redirectAttributes.addFlashAttribute("error",
+						"SRTファイル (.srt) を選択してください");
+				return "redirect:/rehearsal";
+			}
+		} else if (!hasUrl) {
+			redirectAttributes.addFlashAttribute("error",
+					"SRTファイルまたはYouTube URLのいずれかを指定してください");
 			return "redirect:/rehearsal";
 		}
 
 		try {
+			InputStream srtInputStream;
+			if (file != null && !file.isEmpty()) {
+				srtInputStream = file.getInputStream();
+			} else {
+				String srtContent = youTubeCaptionService.fetchCaptionAsSrt(youtubeUrl);
+				srtInputStream = new ByteArrayInputStream(
+						srtContent.getBytes(StandardCharsets.UTF_8));
+			}
+
 			List<RehearsalInstruction> instructions =
-					rehearsalSrtService.analyze(file.getInputStream(), youtubeUrl);
+					rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
 			Map<String, Integer> instrumentSummary =
 					rehearsalSrtService.countByInstrument(instructions);
 
@@ -71,8 +92,13 @@ public class RehearsalController {
 
 			return "rehearsal/form";
 
+		} catch (YouTubeCaptionException e) {
+			redirectAttributes.addFlashAttribute("error",
+					"YouTube字幕の取得に失敗しました: " + e.getMessage());
+			return "redirect:/rehearsal";
 		} catch (IOException e) {
-			redirectAttributes.addFlashAttribute("error", "ファイルの読み込みに失敗しました: " + e.getMessage());
+			redirectAttributes.addFlashAttribute("error",
+					"ファイルの読み込みに失敗しました: " + e.getMessage());
 			return "redirect:/rehearsal";
 		}
 	}

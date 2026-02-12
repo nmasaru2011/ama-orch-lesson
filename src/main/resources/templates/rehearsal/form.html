@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>練習まとめ</title>
+    <title>Youtubeオケ練習録音文字起こし</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -140,26 +140,42 @@
 
 <body>
     <div class="container">
-        <h1>練習まとめ - SRT分析ツール</h1>
+        <h1>Youtubeオケ練習録音文字起こし</h1>
 
         <div th:if="${error}" class="error">
             <strong>エラー:</strong> <span th:text="${error}"></span>
         </div>
 
-        <form method="post" action="/rehearsal/analyze" enctype="multipart/form-data">
+        <form id="analyzeForm" method="post" action="/rehearsal/analyze" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="file">SRTファイル（字幕ファイル）を選択:</label>
-                <input type="file" id="file" name="file" accept=".srt" required>
-            </div>
-
-            <div class="form-group">
-                <label for="youtubeUrl">YouTube URL（オプション）:</label>
+                <label for="youtubeUrl">YouTube URL:</label>
                 <input type="url" id="youtubeUrl" name="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..."
                     value="">
             </div>
 
+            <div class="form-group">
+                <label for="file">SRTファイル（任意）:</label>
+                <input type="file" id="file" name="file" accept=".srt">
+                <small style="color: #888; display: block; margin-top: 4px;">
+                    指定しない場合はYouTubeの自動字幕を使用します
+                </small>
+            </div>
+
             <button type="submit">分析</button>
         </form>
+
+        <script>
+            document.getElementById('analyzeForm').addEventListener('submit', function (e) {
+                var fileInput = document.getElementById('file');
+                var urlInput = document.getElementById('youtubeUrl');
+                var hasFile = fileInput.files && fileInput.files.length > 0;
+                var hasUrl = urlInput.value.trim() !== '';
+                if (!hasFile && !hasUrl) {
+                    e.preventDefault();
+                    alert('SRTファイルまたはYouTube URLのいずれかを指定してください');
+                }
+            });
+        </script>
 
         <div th:if="${instructions}" class="results-section">
             <h2>分析結果</h2>

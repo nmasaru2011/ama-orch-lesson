@@ -178,11 +178,11 @@ public class RehearsalSrtService {
 	 * SRTタイムスタンプをパースして秒数を返す
 	 */
 	private long parseSrtTime(String timeStr) {
-		// 形式: HH:MM:SS,mmm
+		// 形式: HH:MM:SS,mmm または HH:MM:SS.mmm
 		String[] parts = timeStr.split(":");
 		int h = Integer.parseInt(parts[0]);
 		int m = Integer.parseInt(parts[1]);
-		String[] secParts = parts[2].split(",");
+		String[] secParts = parts[2].split("[,.]");
 		int s = Integer.parseInt(secParts[0]);
 		return h * 3600L + m * 60L + s;
 	}

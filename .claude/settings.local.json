@@ -12,7 +12,8 @@
       "Bash(powershell.exe:*)",
       "Bash(dir:*)",
       "Bash(./mvnw clean compile:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(where:*)"
     ],
     "deny": [],
     "ask": []

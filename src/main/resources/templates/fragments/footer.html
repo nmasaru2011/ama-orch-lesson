@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <footer th:fragment="footer" style="margin-top: 30px; padding: 15px 0; border-top: 1px solid #ddd; text-align: center; font-size: 13px; color: #888;">
+        <span th:text="'v' + ${footerVersion}">v0.0.1</span>
+        |
+        <a th:href="'https://github.com/nmasaru2011/ama-orch-lesson/commit/' + ${footerGitHash}"
+           th:text="${footerGitHash}" target="_blank" style="color: #007bff; text-decoration: none;">abc1234</a>
+        |
+        <span th:text="${footerGitCommitTime}">2026-01-01</span>
+        |
+        Built with <a href="https://claude.ai/claude-code" target="_blank" style="color: #007bff; text-decoration: none;">Claude Code</a>
+    </footer>
+</body>
+</html>

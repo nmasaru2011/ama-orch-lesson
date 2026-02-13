@@ -1,0 +1,67 @@
+name: Feature Request
+description: 新機能や改善の提案
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能リクエストの記入をお願いします。
+
+  - type: textarea
+    id: as-is
+    attributes:
+      label: AS-IS（現状）
+      description: 現在の状態や問題点を記述してください。
+      placeholder: 現在は〇〇ができない / 〇〇が不足している
+    validations:
+      required: true
+
+  - type: textarea
+    id: to-be
+    attributes:
+      label: TO-BE（あるべき姿）
+      description: 実現したい状態を記述してください。
+      placeholder: 〇〇ができるようにしたい
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 要件
+      description: 具体的な要件を箇条書きで記述してください。
+      placeholder: |
+        - 要件1
+        - 要件2
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-files
+    attributes:
+      label: 影響範囲（対象ファイル・モジュール）
+      description: 変更が必要と思われるファイルやモジュールがあれば記述してください。
+      placeholder: |
+        - src/main/java/com/amaorcnsuaru/lesson/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 受け入れ条件
+      description: この機能が完了したと判断できる条件を記述してください。
+      placeholder: |
+        - [ ] 条件1
+        - [ ] 条件2
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 備考
+      description: 参考情報やその他の補足事項があれば記述してください。
+    validations:
+      required: false

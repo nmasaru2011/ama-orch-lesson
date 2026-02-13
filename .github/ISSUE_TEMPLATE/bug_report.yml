@@ -1,0 +1,75 @@
+name: Bug Report
+description: バグの報告
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告の記入をお願いします。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: バグの概要を簡潔に記述してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: 再現手順
+      description: バグを再現する手順を記述してください。
+      placeholder: |
+        1. 〇〇画面を開く
+        2. 〇〇を入力する
+        3. 〇〇ボタンを押す
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作
+      description: 本来どのように動作すべきかを記述してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際にどのように動作したかを記述してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-files
+    attributes:
+      label: 影響範囲（対象ファイル・モジュール）
+      description: 原因と思われるファイルやモジュールがあれば記述してください。
+      placeholder: |
+        - src/main/java/com/amaorcnsuaru/lesson/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境情報
+      description: 発生環境の情報を記述してください。
+      placeholder: |
+        - OS: Windows 11
+        - Java: 21
+        - ブラウザ: Chrome
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 備考
+      description: スクリーンショットやログなど、補足情報があれば記述してください。
+    validations:
+      required: false

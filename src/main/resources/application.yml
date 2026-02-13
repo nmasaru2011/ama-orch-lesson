@@ -21,3 +21,6 @@ spring:
     init:
       mode: always
       encoding: UTF-8
+
+app:
+  version: '@project.version@'

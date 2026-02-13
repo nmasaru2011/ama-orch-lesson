@@ -21,6 +21,16 @@ public class YouTubeCaptionService {
 
 	private final YoutubeTranscriptApi api;
 	private final TranscriptFormatter srtFormatter;
+	private static final int MAX_RETRIES = 3;
+	private static final long RETRY_DELAY_MS = 1000;
+
+	static {
+		// グローバルなHTTPリダイレクト設定
+		System.setProperty("http.maxRedirects", "5");
+		System.setProperty("https.maxRedirects", "5");
+		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+		System.setProperty("java.net.useSystemProxies", "true");
+	}
 
 	public YouTubeCaptionService() {
 		this.api = TranscriptApiFactory.createDefault();
@@ -28,8 +38,11 @@ public class YouTubeCaptionService {
 	}
 
 	/**
-	 * YouTube動画から字幕をSRT形式で取得する
-	 * 日本語字幕を優先し、見つからない場合は他の言語にフォールバック
+	 * YouTube動画から字幕をSRT形式で取得する 日本語字幕を優先し、見つからない場合は他の言語にフォールバック
+	 *
+	 * @param youtubeUrl YouTube動画のURL
+	 * @return SRT形式の字幕コンテンツ
+	 * @throws YouTubeCaptionException 取得に失敗した場合
 	 */
 	public String fetchCaptionAsSrt(String youtubeUrl) throws YouTubeCaptionException {
 		String videoId = extractVideoId(youtubeUrl);
@@ -37,27 +50,58 @@ public class YouTubeCaptionService {
 			throw new YouTubeCaptionException("有効なYouTube URLを入力してください");
 		}
 
+		return fetchCaptionWithRetry(videoId, 0);
+	}
+
+	/**
+	 * リトライロジック付きで字幕を取得
+	 */
+	private String fetchCaptionWithRetry(String videoId, int retryCount)
+			throws YouTubeCaptionException {
 		try {
-			TranscriptList transcriptList = api.listTranscripts(videoId);
-
-			// 日本語を優先、なければ英語にフォールバック
-			TranscriptContent content = transcriptList.findTranscript("ja", "en").fetch();
-
-			String srtContent = srtFormatter.format(content);
-			if (srtContent == null || srtContent.isBlank()) {
-				throw new YouTubeCaptionException("字幕データが空でした");
-			}
-
-			return srtContent;
-		} catch (YouTubeCaptionException e) {
-			throw e;
+			return doFetchCaption(videoId);
 		} catch (Exception e) {
-			log.error("YouTube字幕の取得に失敗しました: videoId={}", videoId, e);
-			throw new YouTubeCaptionException(
-					"YouTube字幕の取得に失敗しました: " + e.getMessage(), e);
+			if (retryCount < MAX_RETRIES) {
+				log.warn("YouTube字幕の取得に失敗しました (試行 {}/{}): videoId={}, error={}", retryCount + 1,
+						MAX_RETRIES, videoId, e.getMessage());
+
+				try {
+					// リトライ前に待機（指数バックオフ）
+					long delayMs = RETRY_DELAY_MS * (long) Math.pow(2, retryCount);
+					Thread.sleep(delayMs);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+				}
+
+				return fetchCaptionWithRetry(videoId, retryCount + 1);
+			} else {
+				log.error("YouTube字幕の取得に複数回失敗しました (最大試行回数に達しました): videoId={}", videoId, e);
+				throw new YouTubeCaptionException(
+						"YouTube字幕の取得に失敗しました (Render環境での最大リトライ回数超過): " + e.getMessage(), e);
+			}
 		}
 	}
 
+	/**
+	 * 実際の取得処理
+	 */
+	private String doFetchCaption(String videoId) throws Exception {
+		TranscriptList transcriptList = api.listTranscripts(videoId);
+
+		// 日本語を優先、なければ英語にフォールバック
+		TranscriptContent content = transcriptList.findTranscript("ja", "en").fetch();
+
+		String srtContent = srtFormatter.format(content);
+		if (srtContent == null || srtContent.isBlank()) {
+			throw new Exception("字幕データが空でした");
+		}
+
+		return srtContent;
+	}
+
+	/**
+	 * YouTubeのURLからビデオIDを抽出
+	 */
 	private String extractVideoId(String url) {
 		if (url == null || url.isBlank()) {
 			return null;

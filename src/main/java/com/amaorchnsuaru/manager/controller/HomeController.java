@@ -15,4 +15,9 @@ public class HomeController {
 	public String license() {
 		return "license";
 	}
+
+	@GetMapping("/release-notes")
+	public String releaseNotes() {
+		return "release-notes";
+	}
 }

@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.service;
+package com.amaorchnsuaru.manager.lesson.service;
 
 import java.awt.Color;
 import java.io.BufferedReader;
@@ -42,19 +42,19 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
-import com.amaorcnsuaru.lesson.entity.Correction;
-import com.amaorcnsuaru.lesson.entity.ExcludePattern;
-import com.amaorcnsuaru.lesson.entity.IncludeKeyword;
-import com.amaorcnsuaru.lesson.entity.InstrumentKeyword;
-import com.amaorcnsuaru.lesson.entity.MeasurePattern;
-import com.amaorcnsuaru.lesson.entity.RehearsalMarkPattern;
-import com.amaorcnsuaru.lesson.repository.CorrectionRepository;
-import com.amaorcnsuaru.lesson.repository.ExcludePatternRepository;
-import com.amaorcnsuaru.lesson.repository.IncludeKeywordRepository;
-import com.amaorcnsuaru.lesson.repository.InstrumentKeywordRepository;
-import com.amaorcnsuaru.lesson.repository.MeasurePatternRepository;
-import com.amaorcnsuaru.lesson.repository.RehearsalMarkPatternRepository;
-import com.amaorcnsuaru.lesson.resource.RehearsalInstruction;
+import com.amaorchnsuaru.manager.entity.Correction;
+import com.amaorchnsuaru.manager.entity.ExcludePattern;
+import com.amaorchnsuaru.manager.entity.IncludeKeyword;
+import com.amaorchnsuaru.manager.entity.InstrumentKeyword;
+import com.amaorchnsuaru.manager.entity.MeasurePattern;
+import com.amaorchnsuaru.manager.entity.RehearsalMarkPattern;
+import com.amaorchnsuaru.manager.repository.CorrectionRepository;
+import com.amaorchnsuaru.manager.repository.ExcludePatternRepository;
+import com.amaorchnsuaru.manager.repository.IncludeKeywordRepository;
+import com.amaorchnsuaru.manager.repository.InstrumentKeywordRepository;
+import com.amaorchnsuaru.manager.repository.MeasurePatternRepository;
+import com.amaorchnsuaru.manager.repository.RehearsalMarkPatternRepository;
+import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;

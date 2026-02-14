@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.resource;
+package com.amaorchnsuaru.manager.lesson.resource;
 
 import java.util.List;
 

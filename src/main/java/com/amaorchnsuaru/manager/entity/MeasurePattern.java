@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.entity;
+package com.amaorchnsuaru.manager.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

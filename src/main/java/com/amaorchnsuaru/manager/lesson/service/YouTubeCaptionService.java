@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.service;
+package com.amaorchnsuaru.manager.lesson.service;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

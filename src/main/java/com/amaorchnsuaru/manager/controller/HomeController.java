@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.controller;
+package com.amaorchnsuaru.manager.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,5 +14,10 @@ public class HomeController {
 	@GetMapping("/license")
 	public String license() {
 		return "license";
+	}
+
+	@GetMapping("/release-notes")
+	public String releaseNotes() {
+		return "release-notes";
 	}
 }

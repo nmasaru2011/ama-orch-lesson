@@ -43,7 +43,7 @@ body:
       label: 影響範囲（対象ファイル・モジュール）
       description: 変更が必要と思われるファイルやモジュールがあれば記述してください。
       placeholder: |
-        - src/main/java/com/amaorcnsuaru/lesson/...
+        - src/main/java/com/amaorchnsuaru/manager/...
     validations:
       required: false
 

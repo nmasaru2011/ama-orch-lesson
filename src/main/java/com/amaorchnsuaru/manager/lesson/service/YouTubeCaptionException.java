@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.service;
+package com.amaorchnsuaru.manager.lesson.service;
 
 public class YouTubeCaptionException extends Exception {
 

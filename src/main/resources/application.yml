@@ -22,6 +22,10 @@ spring:
       mode: always
       encoding: UTF-8
 
+logging:
+  level:
+    "[org.apache.commons.compress]": DEBUG
+
 app:
   version: '@project.version@'
 

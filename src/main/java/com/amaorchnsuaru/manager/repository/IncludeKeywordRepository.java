@@ -1,8 +1,8 @@
-package com.amaorcnsuaru.lesson.repository;
+package com.amaorchnsuaru.manager.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.amaorcnsuaru.lesson.entity.IncludeKeyword;
+import com.amaorchnsuaru.manager.entity.IncludeKeyword;
 
 public interface IncludeKeywordRepository extends JpaRepository<IncludeKeyword, Long> {
 }

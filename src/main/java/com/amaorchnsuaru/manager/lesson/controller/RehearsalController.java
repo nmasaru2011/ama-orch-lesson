@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.controller;
+package com.amaorchnsuaru.manager.lesson.controller;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,10 +22,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.amaorcnsuaru.lesson.resource.RehearsalInstruction;
-import com.amaorcnsuaru.lesson.service.RehearsalSrtService;
-import com.amaorcnsuaru.lesson.service.YouTubeCaptionException;
-import com.amaorcnsuaru.lesson.service.YouTubeCaptionService;
+import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
+import com.amaorchnsuaru.manager.lesson.service.RehearsalSrtService;
+import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionException;
+import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionService;
 
 import jakarta.servlet.http.HttpSession;
 

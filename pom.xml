@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.amaorchnsuaru</groupId>
 	<artifactId>manager</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<name>manager</name>
 	<description>Rehearsal lesson summary service</description>
 	<properties>

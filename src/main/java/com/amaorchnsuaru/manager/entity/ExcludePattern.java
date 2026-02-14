@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.entity;
+package com.amaorchnsuaru.manager.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,15 +8,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "include_keyword")
-public class IncludeKeyword {
+@Table(name = "exclude_pattern")
+public class ExcludePattern {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "keyword", nullable = false)
-	private String keyword;
+	@Column(name = "pattern", nullable = false)
+	private String pattern;
 
 	public Long getId() {
 		return id;
@@ -26,11 +26,11 @@ public class IncludeKeyword {
 		this.id = id;
 	}
 
-	public String getKeyword() {
-		return keyword;
+	public String getPattern() {
+		return pattern;
 	}
 
-	public void setKeyword(String keyword) {
-		this.keyword = keyword;
+	public void setPattern(String pattern) {
+		this.pattern = pattern;
 	}
 }

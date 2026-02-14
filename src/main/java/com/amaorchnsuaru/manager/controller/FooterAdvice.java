@@ -1,4 +1,4 @@
-package com.amaorcnsuaru.lesson.controller;
+package com.amaorchnsuaru.manager.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.GitProperties;

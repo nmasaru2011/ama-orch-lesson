@@ -9,8 +9,8 @@
             "name": "LessonApplication",
             "request": "launch",
             "console": "integratedTerminal",
-            "mainClass": "com.amaorcnsuaru.lesson.LessonApplication",
-            "projectName": "lesson"
+            "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
+            "projectName": "manager"
         }
     ]
 }

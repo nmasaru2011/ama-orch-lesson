@@ -24,3 +24,10 @@ spring:
 
 app:
   version: '@project.version@'
+
+# YouTube API接続設定（Renderなどのサーバー環境対応）
+youtube:
+  # リトライ回数
+  max-retries: 3
+  # 初期リトライ待機時間（ミリ秒）
+  retry-delay-ms: 1000

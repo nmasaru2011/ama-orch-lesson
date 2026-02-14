@@ -9,4 +9,6 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Render environment settings for YouTube API access
+ENV JAVA_OPTS="-Dhttp.maxRedirects=5 -Dhttps.maxRedirects=5 -Dcom.sun.jndi.ldap.connect.pool=false -Duser.timezone=UTC"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

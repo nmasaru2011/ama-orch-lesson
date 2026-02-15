@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          CURRENT_VERSION=$(grep -m1 '<version>' pom.xml | grep -oP '\d+\.\d+\.\d+-SNAPSHOT' || true)
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "::error::pom.xml does not contain a -SNAPSHOT version in the project version"
+            exit 1
+          fi
+          RELEASE_VERSION="${CURRENT_VERSION%-SNAPSHOT}"
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "release=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Calculate next version (increment patch)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          echo "next=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "next_snapshot=${NEXT_VERSION}-SNAPSHOT" >> "$GITHUB_OUTPUT"
+
+          echo "Release version: $RELEASE_VERSION"
+          echo "Next version: ${NEXT_VERSION}-SNAPSHOT"
+
+      - name: Create release branch and update version
+        run: |
+          RELEASE_BRANCH="release/v${{ steps.version.outputs.release }}"
+
+          # Create or reset release branch from develop
+          git checkout -B "$RELEASE_BRANCH"
+
+          # Update pom.xml version (remove -SNAPSHOT)
+          sed -i "s|<version>${{ steps.version.outputs.current }}</version>|<version>${{ steps.version.outputs.release }}</version>|" pom.xml
+
+          git add pom.xml
+          git commit -m "release: v${{ steps.version.outputs.release }}"
+          git push -u origin "$RELEASE_BRANCH" --force
+
+      - name: Merge to main
+        run: |
+          git checkout main
+          git pull origin main
+          git merge --no-ff "release/v${{ steps.version.outputs.release }}" -m "Merge release/v${{ steps.version.outputs.release }} into main"
+          git push origin main
+
+      - name: Create tag
+        run: |
+          git tag "v${{ steps.version.outputs.release }}"
+          git push origin "v${{ steps.version.outputs.release }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.release }}" \
+            --title "v${{ steps.version.outputs.release }}" \
+            --generate-notes
+
+      - name: Prepare next version branch
+        run: |
+          NEXT_BRANCH="release/v${{ steps.version.outputs.next }}"
+
+          # Create next release branch from main
+          git checkout -B "$NEXT_BRANCH" main
+
+          # Update pom.xml to next SNAPSHOT version
+          sed -i "s|<version>${{ steps.version.outputs.release }}</version>|<version>${{ steps.version.outputs.next_snapshot }}</version>|" pom.xml
+
+          git add pom.xml
+          git commit -m "prepare next development iteration: v${{ steps.version.outputs.next_snapshot }}"
+          git push -u origin "$NEXT_BRANCH" --force
+
+      - name: Rebase develop
+        run: |
+          NEXT_BRANCH="release/v${{ steps.version.outputs.next }}"
+
+          git checkout develop
+          git pull origin develop
+          git rebase "$NEXT_BRANCH"
+          git push origin develop --force-with-lease

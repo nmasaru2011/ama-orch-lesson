@@ -24,16 +24,10 @@ public class YouTubeCaptionService {
 	private static final int MAX_RETRIES = 3;
 	private static final long RETRY_DELAY_MS = 1000;
 
-	static {
-		// グローバルなHTTPリダイレクト設定
-		System.setProperty("http.maxRedirects", "5");
-		System.setProperty("https.maxRedirects", "5");
-		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-		System.setProperty("java.net.useSystemProxies", "true");
-	}
-
 	public YouTubeCaptionService() {
-		this.api = TranscriptApiFactory.createDefault();
+		// consent cookieとUser-Agentを設定するカスタムクライアントを使用
+		// Render等クラウド環境でのYouTube 302リダイレクトを回避
+		this.api = TranscriptApiFactory.createWithClient(new ConsentHandlingYoutubeClient());
 		this.srtFormatter = TranscriptFormatters.srtFormatter();
 	}
 

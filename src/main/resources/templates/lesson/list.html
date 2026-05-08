@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>練習データ一覧</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1400px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #28a745; padding-bottom: 10px; }
+        .btn { display: inline-block; padding: 7px 14px; border-radius: 4px; text-decoration: none; font-size: 13px; cursor: pointer; border: none; }
+        .btn-green     { background-color: #28a745; color: white; }
+        .btn-green:hover { background-color: #218838; }
+        .btn-warning   { background-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger    { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+        th { background-color: #343a40; color: white; padding: 9px 7px; text-align: left; white-space: nowrap; }
+        td { padding: 7px; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        tr:hover td { background-color: #f8f9fa; }
+        .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger  { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .pagination { display: flex; gap: 4px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+        .page-btn { padding: 5px 11px; border: 1px solid #dee2e6; border-radius: 4px; text-decoration: none; color: #28a745; font-size: 13px; }
+        .page-btn.active { background-color: #28a745; color: white; border-color: #28a745; }
+        .page-btn:hover:not(.active) { background-color: #e9ecef; }
+        .sub-text { color: #888; font-size: 11px; }
+        .search-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+                      background: #eafaf1; padding: 12px 16px; border-radius: 6px; margin-bottom: 14px; }
+        .search-bar label { font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
+        .search-bar select, .search-bar input[type=number] {
+            padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; }
+        .btn-search { background-color: #28a745; color: white; padding: 7px 16px;
+                      border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-search:hover { background-color: #218838; }
+        .btn-clear { background-color: #6c757d; color: white; padding: 7px 12px;
+                     border: none; border-radius: 4px; cursor: pointer; font-size: 13px; text-decoration: none; }
+        .btn-clear:hover { background-color: #545b62; }
+        .badge-future { background: #cce5ff; color: #004085; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+        .badge-past   { background: #e2e3e5; color: #383d41; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>練習データ一覧</h1>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}"   class="alert alert-danger"  th:text="${errorMsg}"></div>
+
+    <!-- 検索フォーム -->
+    <form method="get" action="/lesson" class="search-bar">
+        <div>
+            <label for="searchConcert">演奏会</label>
+            <select id="searchConcert" name="concertMainId" style="min-width:200px; max-width:300px;">
+                <option value="">-- すべて --</option>
+                <option th:each="c : ${mainConcertList}"
+                        th:value="${c.concertMainId}"
+                        th:text="${c.concertName != null ? c.concertName + '（' + c.orchId + '）' : c.concertMainId}"
+                        th:selected="${c.concertMainId == selectedConcertMainId}"></option>
+            </select>
+        </div>
+        <div>
+            <label for="searchOrch">オーケストラ</label>
+            <select id="searchOrch" name="orchId">
+                <option value="">-- すべて --</option>
+                <option th:each="o : ${orchList}"
+                        th:value="${o.orchId}"
+                        th:text="${o.orchName}"
+                        th:selected="${o.orchId == selectedOrchId}"></option>
+            </select>
+        </div>
+        <div>
+            <label for="searchYear">年</label>
+            <input type="number" id="searchYear" name="year" min="2020" max="2099"
+                   th:value="${selectedYear}" placeholder="例: 2024" style="width:90px;">
+        </div>
+        <div>
+            <label for="searchFuture">時期</label>
+            <select id="searchFuture" name="future" style="width:130px;">
+                <option value=""       th:selected="${selectedFuture == null}">-- すべて --</option>
+                <option value="future" th:selected="${selectedFuture == 'future'}">未来（今日以降）</option>
+                <option value="past"   th:selected="${selectedFuture == 'past'}">過去（今日より前）</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-search">検索</button>
+        <a href="/lesson" class="btn-clear">クリア</a>
+    </form>
+
+    <div class="toolbar">
+        <span th:text="${lessonPage.totalElements} + ' 件'"></span>
+        <div>
+            <a sec:authorize="hasRole('ADMIN')" href="/lesson/new" class="btn btn-green">+ 新規登録</a>
+            &nbsp;
+            <a href="/concert" class="btn btn-secondary">演奏会一覧へ</a>
+            &nbsp;
+            <a href="/" class="btn btn-secondary">ホームへ</a>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>練習日</th>
+                <th>時期</th>
+                <th>オーケストラ</th>
+                <th>演奏会</th>
+                <th>#</th>
+                <th>開始</th>
+                <th>終了</th>
+                <th>場所</th>
+                <th>内容</th>
+                <th sec:authorize="hasRole('ADMIN')">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="l : ${lessonPage.content}">
+                <td th:text="${l.lessonDate}"></td>
+                <td>
+                    <span th:if="${l.lessonDate != null and l.lessonDate >= #temporals.createToday()}"
+                          class="badge-future">未来</span>
+                    <span th:if="${l.lessonDate != null and l.lessonDate < #temporals.createToday()}"
+                          class="badge-past">過去</span>
+                </td>
+                <td>
+                    <span th:text="${orchNameMap[concertOrchMap[l.concertMainId]] != null
+                                     ? orchNameMap[concertOrchMap[l.concertMainId]]
+                                     : concertOrchMap[l.concertMainId]}"></span>
+                </td>
+                <td>
+                    <span th:text="${concertNameMap[l.concertMainId] != null
+                                     ? concertNameMap[l.concertMainId]
+                                     : l.concertMainId}"></span>
+                    <br>
+                    <span class="sub-text" th:text="${l.concertMainId}"></span>
+                </td>
+                <td th:text="${l.branchNo}"></td>
+                <td th:text="${l.lessonStartTimeStr != null and !#strings.isEmpty(l.lessonStartTimeStr)
+                               ? l.lessonStartTimeStr : '-'}"></td>
+                <td th:text="${l.lessonEndTimeStr != null and !#strings.isEmpty(l.lessonEndTimeStr)
+                               ? l.lessonEndTimeStr : '-'}"></td>
+                <td th:text="${l.placeName != null and !#strings.isEmpty(l.placeName)
+                               ? l.placeName : '-'}"></td>
+                <td th:text="${l.contain != null and !#strings.isEmpty(l.contain)
+                               ? l.contain : '-'}"></td>
+                <td sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/lesson/{id}/edit(id=${l.id})}" class="btn btn-warning" style="padding:3px 8px;">編集</a>
+                    &nbsp;
+                    <form th:action="@{/lesson/{id}/delete(id=${l.id})}" method="post" style="display:inline;"
+                          onsubmit="return confirm(this.dataset.label + ' を削除しますか？')"
+                          th:data-label="${l.lessonDate + ' #' + l.branchNo}">
+                        <button type="submit" class="btn btn-danger" style="padding:3px 8px;">削除</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="pagination" th:if="${lessonPage.totalPages > 1}">
+        <a th:if="${!lessonPage.first}"
+           th:href="@{/lesson(page=${lessonPage.number - 1}, concertMainId=${selectedConcertMainId}, orchId=${selectedOrchId}, year=${selectedYear}, future=${selectedFuture})}"
+           class="page-btn">‹ 前</a>
+        <a th:each="i : ${#numbers.sequence(0, lessonPage.totalPages - 1)}"
+           th:href="@{/lesson(page=${i}, concertMainId=${selectedConcertMainId}, orchId=${selectedOrchId}, year=${selectedYear}, future=${selectedFuture})}"
+           th:text="${i + 1}"
+           th:class="${i == lessonPage.number} ? 'page-btn active' : 'page-btn'"></a>
+        <a th:if="${!lessonPage.last}"
+           th:href="@{/lesson(page=${lessonPage.number + 1}, concertMainId=${selectedConcertMainId}, orchId=${selectedOrchId}, year=${selectedYear}, future=${selectedFuture})}"
+           class="page-btn">次 ›</a>
+    </div>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

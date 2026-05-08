@@ -75,6 +75,30 @@
                     <span class="description">YouTubeの字幕（自動取得またはSRTファイル）を分析して、練習中の指摘内容を抽出・整理します</span>
                 </a>
             </li>
+            <li sec:authorize="hasRole('ADMIN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+                <a href="/person" class="menu-link">
+                    人物マスタ管理
+                    <span class="description">人物データの一覧表示・検索・新規登録・編集・削除（CRUD）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/concert" class="menu-link">
+                    演奏会データ管理
+                    <span class="description">演奏会の一覧表示・新規登録・編集・削除（書き込みは管理者のみ）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/lesson" class="menu-link">
+                    練習データ管理
+                    <span class="description">練習日程・場所・内容の一覧表示・新規登録・編集・削除（演奏会・オーケストラ・年・時期で絞り込み）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/orch" class="menu-link">
+                    オーケストラ団体マスタ管理
+                    <span class="description">オーケストラ団体の一覧表示・新規登録・編集・削除（CRUD）</span>
+                </a>
+            </li>
             <li>
                 <a href="/license" class="menu-link">
                     使用OSSライセンス情報

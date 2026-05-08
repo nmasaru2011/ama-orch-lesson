@@ -10,7 +10,8 @@
             "request": "launch",
             "console": "integratedTerminal",
             "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
-            "projectName": "manager"
+            "projectName": "manager",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

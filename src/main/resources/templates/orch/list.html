@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>オーケストラ一覧</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
+        .btn { display: inline-block; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #545b62; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+        th { background-color: #343a40; color: white; padding: 10px 8px; text-align: left; }
+        td { padding: 8px; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        tr:hover td { background-color: #f8f9fa; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .badge-area     { background-color: #cce5ff; color: #004085; }
+        .badge-students { background-color: #d4edda; color: #155724; }
+        .badge-company  { background-color: #fff3cd; color: #856404; }
+        .badge-event    { background-color: #f8d7da; color: #721c24; }
+        .badge-person   { background-color: #e2d9f3; color: #432874; }
+        .badge-prefer   { background-color: #fde8d8; color: #7d3c00; }
+        .badge-on  { background-color: #28a745; color: white; }
+        .badge-off { background-color: #6c757d; color: white; }
+        .badge-pub  { background-color: #17a2b8; color: white; }
+        .badge-priv { background-color: #adb5bd; color: white; }
+        .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger  { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .url-link { font-size: 11px; color: #007bff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>オーケストラ一覧</h1>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+    <div th:if="${errorMsg}"   class="alert alert-danger"  th:text="${errorMsg}"></div>
+
+    <div class="toolbar">
+        <span th:text="${#lists.size(orchList)} + ' 件'"></span>
+        <div>
+            <a sec:authorize="hasRole('ADMIN')" href="/orch/new" class="btn btn-primary">+ 新規登録</a>
+            &nbsp;
+            <a href="/" class="btn btn-secondary">ホームへ</a>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>団体名</th>
+                <th>英語名</th>
+                <th>種別</th>
+                <th>設立</th>
+                <th>活動</th>
+                <th>公開</th>
+                <th>HP</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="o : ${orchList}">
+                <td th:text="${o.orchId}"></td>
+                <td th:text="${o.orchName}"></td>
+                <td th:text="${o.orchNameEn}"></td>
+                <td>
+                    <span th:if="${o.orchType == 'AREA'}"     class="badge badge-area"     th:text="${orchTypeLabels['AREA']}"></span>
+                    <span th:if="${o.orchType == 'STUDENTS'}" class="badge badge-students" th:text="${orchTypeLabels['STUDENTS']}"></span>
+                    <span th:if="${o.orchType == 'COMPANY'}"  class="badge badge-company"  th:text="${orchTypeLabels['COMPANY']}"></span>
+                    <span th:if="${o.orchType == 'EVENT'}"    class="badge badge-event"    th:text="${orchTypeLabels['EVENT']}"></span>
+                    <span th:if="${o.orchType == 'PERSON'}"   class="badge badge-person"   th:text="${orchTypeLabels['PERSON']}"></span>
+                    <span th:if="${o.orchType == 'PREFER'}"   class="badge badge-prefer"   th:text="${orchTypeLabels['PREFER']}"></span>
+                    <span th:if="${o.orchType == null}">-</span>
+                </td>
+                <td th:text="${o.since != null ? o.since : '-'}"></td>
+                <td>
+                    <span th:if="${o.activity == true}"  class="badge badge-on">活動中</span>
+                    <span th:if="${o.activity == false}" class="badge badge-off">休止</span>
+                    <span th:if="${o.activity == null}">-</span>
+                </td>
+                <td>
+                    <span th:if="${o.isPublic == true}"  class="badge badge-pub">公開</span>
+                    <span th:if="${o.isPublic == false}" class="badge badge-priv">非公開</span>
+                    <span th:if="${o.isPublic == null}">-</span>
+                </td>
+                <td>
+                    <a th:if="${o.homepageUrl != null}" th:href="${o.homepageUrl}" target="_blank" class="url-link">HP</a>
+                    <span th:if="${o.homepageUrl == null}">-</span>
+                </td>
+                <td>
+                    <span sec:authorize="hasRole('ADMIN')">
+                        <a th:href="@{/orch/{id}/edit(id=${o.orchId})}" class="btn btn-warning" style="padding:4px 10px;">編集</a>
+                        &nbsp;
+                        <form th:action="@{/orch/{id}/delete(id=${o.orchId})}" method="post" style="display:inline;"
+                              onsubmit="return confirm(this.dataset.name + ' を削除しますか？')"
+                              th:data-name="${o.orchName}">
+                            <button type="submit" class="btn btn-danger" style="padding:4px 10px;">削除</button>
+                        </form>
+                    </span>
+                    <span sec:authorize="!hasRole('ADMIN')" style="color:#aaa; font-size:12px;">閲覧のみ</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

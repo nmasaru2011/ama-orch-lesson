@@ -1,7 +1,18 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
     <footer th:fragment="footer" style="margin-top: 30px; padding: 15px 0; border-top: 1px solid #ddd; text-align: center; font-size: 13px; color: #888;">
+        <div sec:authorize="isAuthenticated()" style="margin-bottom: 8px;">
+            <span>ログイン中: </span>
+            <strong th:text="${displayName}">user</strong>
+            <span> | </span>
+            <form th:action="@{/logout}" method="post" style="display: inline;">
+                <button type="submit" style="background: none; border: none; color: #007bff; cursor: pointer; font-size: 13px; padding: 0; text-decoration: underline;">
+                    ログアウト
+                </button>
+            </form>
+        </div>
         <span th:text="'v' + ${footerVersion}">v0.0.1</span>
         |
         <a th:href="'https://github.com/nmasaru2011/ama-orch-lesson/commit/' + ${footerGitHash}"

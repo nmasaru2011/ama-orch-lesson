@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn dependency:build-classpath:*)",
+      "Bash(mvn test:*)",
+      "WebFetch(domain:docs.github.com)",
+      "Bash(Get-ChildItem -Path \"c:\\\\_lab\\\\spring-appli\\\\ama-orch-lesson\\\\docs\" -File)"
+    ]
+  }
+}

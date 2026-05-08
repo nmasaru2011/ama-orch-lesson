@@ -2,9 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Youtubeオケ練習録音文字起こし</title>
+    <title>オケ練習録音まとめ</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,6 +29,43 @@
             padding-bottom: 10px;
         }
 
+        /* ---- タブ ---- */
+        .tab-bar {
+            display: flex;
+            border-bottom: 2px solid #007bff;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            font-weight: bold;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* ---- フォーム共通 ---- */
         .form-group {
             margin: 15px 0;
         }
@@ -48,6 +87,19 @@
             box-sizing: border-box;
         }
 
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .radio-group label {
+            display: inline;
+            font-weight: normal;
+            margin-left: 4px;
+            margin-right: 16px;
+        }
+
         button {
             background-color: #007bff;
             color: white;
@@ -59,25 +111,20 @@
             margin-right: 10px;
         }
 
-        button:hover {
-            background-color: #0056b3;
-        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
 
-        .download-buttons {
-            margin-top: 20px;
+        button.danger {
+            background-color: #dc3545;
         }
+        button.danger:hover { background-color: #a71d2a; }
 
-        .download-btn {
+        button.success-btn {
             background-color: #28a745;
-            display: inline-block;
-            margin-right: 10px;
-            margin-bottom: 10px;
         }
+        button.success-btn:hover { background-color: #218838; }
 
-        .download-btn:hover {
-            background-color: #218838;
-        }
-
+        /* ---- アラート ---- */
         .error {
             color: #d32f2f;
             background-color: #ffebee;
@@ -94,9 +141,36 @@
             margin: 10px 0;
         }
 
-        .results-section {
-            margin-top: 30px;
+        .info-box {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #333;
         }
+
+        /* ---- リアルタイム録音 ---- */
+        #recordingStatus {
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-left: 12px;
+        }
+
+        .status-idle     { background: #eee; color: #555; }
+        .status-recording { background: #ffebee; color: #c62828; }
+        .status-processing { background: #fff8e1; color: #f57f17; }
+
+        #liveCount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        /* ---- 結果 ---- */
+        .results-section { margin-top: 30px; }
 
         table {
             width: 100%;
@@ -104,8 +178,7 @@
             margin-top: 15px;
         }
 
-        th,
-        td {
+        th, td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
@@ -116,9 +189,7 @@
             color: white;
         }
 
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
+        tr:nth-child(even) { background-color: #f9f9f9; }
 
         .summary {
             background-color: #e3f2fd;
@@ -127,121 +198,437 @@
             margin-bottom: 15px;
         }
 
-        a {
-            color: #007bff;
-            text-decoration: none;
+        .download-buttons { margin-top: 20px; }
+
+        .download-btn {
+            background-color: #28a745;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
 
-        a:hover {
-            text-decoration: underline;
-        }
+        .download-btn:hover { background-color: #218838; }
+
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Youtubeオケ練習録音文字起こし</h1>
+<div class="container">
+    <h1>オケ練習録音まとめ</h1>
 
-        <div th:if="${error}" class="error">
-            <strong>エラー:</strong> <span th:text="${error}"></span>
-        </div>
+    <div th:if="${error}" class="error">
+        <strong>エラー:</strong> <span th:text="${error}"></span>
+    </div>
 
-        <form id="analyzeForm" method="post" action="/rehearsal/analyze" enctype="multipart/form-data">
+    <!-- ========== タブバー ========== -->
+    <div class="tab-bar">
+        <button class="tab-btn" data-tab="youtube">YouTube / SRT</button>
+        <button class="tab-btn" data-tab="audio">音声ファイル</button>
+        <button class="tab-btn" data-tab="realtime">リアルタイム録音</button>
+    </div>
+
+    <!-- ========== Tab 1: YouTube / SRT（既存） ========== -->
+    <div id="tab-youtube" class="tab-panel">
+        <form id="analyzeForm" method="post" th:action="@{/rehearsal/analyze}" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="youtubeUrl">YouTube URL:</label>
-                <input type="url" id="youtubeUrl" name="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..."
-                    value="">
+                <input type="url" id="youtubeUrl" name="youtubeUrl"
+                       placeholder="https://www.youtube.com/watch?v=..." value="">
             </div>
-
             <div class="form-group">
                 <label for="file">SRTファイル（任意）:</label>
                 <input type="file" id="file" name="file" accept=".srt">
-                <small style="color: #888; display: block; margin-top: 4px;">
+                <small style="color:#888;display:block;margin-top:4px;">
                     指定しない場合はYouTubeの自動字幕を使用します
                 </small>
             </div>
-
             <button type="submit">分析</button>
         </form>
-
         <script>
-            document.getElementById('analyzeForm').addEventListener('submit', function (e) {
+            document.getElementById('analyzeForm').addEventListener('submit', function(e) {
                 var fileInput = document.getElementById('file');
-                var urlInput = document.getElementById('youtubeUrl');
-                var hasFile = fileInput.files && fileInput.files.length > 0;
-                var hasUrl = urlInput.value.trim() !== '';
-                if (!hasFile && !hasUrl) {
+                var urlInput  = document.getElementById('youtubeUrl');
+                if (!(fileInput.files && fileInput.files.length > 0) && !urlInput.value.trim()) {
                     e.preventDefault();
                     alert('SRTファイルまたはYouTube URLのいずれかを指定してください');
                 }
             });
         </script>
+    </div>
 
-        <div th:if="${instructions}" class="results-section">
-            <h2>分析結果</h2>
+    <!-- ========== Tab 2: 音声ファイルアップロード ========== -->
+    <div id="tab-audio" class="tab-panel">
+        <div class="info-box">
+            <strong>音声ファイルを Whisper（OpenAI）で文字起こし</strong>してから解析します。<br>
+            対応形式: mp3 / mp4 / m4a / wav / webm / flac 等（25MB超は自動分割）
+        </div>
+        <form method="post" th:action="@{/rehearsal/audio/analyze}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="audioFile">音声ファイル:</label>
+                <input type="file" id="audioFile" name="audioFile"
+                       accept="audio/*,video/mp4,video/webm" required>
+            </div>
 
-            <div class="summary" th:if="${totalCount > 0}">
-                <p><strong>抽出された指摘件数:</strong> <span th:text="${totalCount}"></span> 件</p>
-                <div th:if="${instrumentSummary.size() > 0}">
-                    <p><strong>楽器別集計:</strong></p>
-                    <ul>
-                        <li th:each="entry : ${instrumentSummary}">
-                            <span th:text="${entry.key}"></span>: <span th:text="${entry.value}"></span> 件
-                        </li>
-                    </ul>
+            <div class="form-group">
+                <label>解析方法:</label>
+                <div class="radio-group">
+                    <input type="radio" name="analysisMode" id="am-std-file" value="standard" checked>
+                    <label for="am-std-file">標準（キーワードマッチング）</label>
+                    <input type="radio" name="analysisMode" id="am-ai-file" value="ai">
+                    <label for="am-ai-file">AI解析（GPT / Claude）</label>
                 </div>
             </div>
 
-            <div class="download-buttons" th:if="${instructions.size() > 0}">
-                <a href="/rehearsal/download/json" class="download-btn" download>
-                    <button type="button">JSON でダウンロード</button>
-                </a>
-                <a href="/rehearsal/download/csv" class="download-btn" download>
-                    <button type="button">CSV でダウンロード</button>
-                </a>
-                <a href="/rehearsal/download/excel" class="download-btn" download>
-                    <button type="button">Excel でダウンロード</button>
-                </a>
-                <a href="/rehearsal/download/pdf" class="download-btn" download>
-                    <button type="button">PDF でダウンロード</button>
-                </a>
+            <div class="form-group" id="aiProviderGroupFile" style="display:none">
+                <label for="aiProviderFile">AIプロバイダー:</label>
+                <select id="aiProviderFile" name="aiProvider">
+                    <option value="openai">OpenAI GPT-4o mini（文字起こし＋解析）</option>
+                    <option value="anthropic">Anthropic Claude（文字起こし: Whisper / 解析: Claude）</option>
+                </select>
             </div>
 
-            <h3>詳細</h3>
-            <table th:if="${instructions.size() > 0}">
-                <thead>
-                    <tr>
-                        <th>時刻</th>
-                        <th>小節</th>
-                        <th>楽器</th>
-                        <th>指摘内容</th>
-                        <th>YouTube リンク</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="instruction : ${instructions}">
-                        <td th:text="${instruction.timeStr}"></td>
-                        <td th:text="${instruction.measuresJoined}"></td>
-                        <td th:text="${instruction.instrumentsJoined}"></td>
-                        <td th:text="${instruction.text}"></td>
-                        <td>
-                            <a th:if="${instruction.youtubeLink}" th:href="${instruction.youtubeLink}" target="_blank">
-                                リンク
-                            </a>
-                            <span th:if="!${instruction.youtubeLink}">-</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <p th:if="${instructions.size() == 0}" class="success">
-                指摘内容が見つかりませんでした。
-            </p>
+            <button type="submit">文字起こし＆解析</button>
+        </form>
+
+        <script>
+            document.querySelectorAll('input[name="analysisMode"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    var groupFile = document.getElementById('aiProviderGroupFile');
+                    var groupRT   = document.getElementById('aiProviderGroupRT');
+                    // ファイルタブのラジオ
+                    var fileAi = document.getElementById('am-ai-file').checked;
+                    if (groupFile) groupFile.style.display = fileAi ? 'block' : 'none';
+                    // リアルタイムタブのラジオ
+                    var rtAi = document.getElementById('am-ai-rt') && document.getElementById('am-ai-rt').checked;
+                    if (groupRT) groupRT.style.display = rtAi ? 'block' : 'none';
+                });
+            });
+        </script>
+    </div>
+
+    <!-- ========== Tab 3: リアルタイム録音 ========== -->
+    <div id="tab-realtime" class="tab-panel">
+        <div class="info-box">
+            ブラウザのマイクで録音し、指定間隔ごとに Whisper で文字起こし・解析します。<br>
+            <strong>Chrome / Edge 推奨</strong>（Firefox は WebM 未対応のため精度が落ちる場合があります）
         </div>
 
-        <hr style="margin-top: 30px;">
-        <p><a href="/">メニューに戻る</a></p>
-    </div>
-    <div th:replace="~{fragments/footer :: footer}"></div>
-</body>
+        <div class="form-group">
+            <label for="recordInterval">送信間隔:</label>
+            <select id="recordInterval">
+                <option value="10">10秒</option>
+                <option value="30" selected>30秒</option>
+                <option value="60">60秒</option>
+                <option value="120">2分</option>
+                <option value="300">5分</option>
+            </select>
+        </div>
 
+        <div class="form-group">
+            <label>解析方法:</label>
+            <div class="radio-group">
+                <input type="radio" name="analysisModeRT" id="am-std-rt" value="standard" checked>
+                <label for="am-std-rt">標準（キーワードマッチング）</label>
+                <input type="radio" name="analysisModeRT" id="am-ai-rt" value="ai">
+                <label for="am-ai-rt">AI解析（GPT / Claude）</label>
+            </div>
+        </div>
+
+        <div class="form-group" id="aiProviderGroupRT" style="display:none">
+            <label for="aiProviderRT">AIプロバイダー:</label>
+            <select id="aiProviderRT">
+                <option value="openai">OpenAI GPT-4o mini</option>
+                <option value="anthropic">Anthropic Claude</option>
+            </select>
+        </div>
+
+        <div style="margin-top:15px;">
+            <button id="btnStart" class="success-btn" onclick="startRecording()">録音開始</button>
+            <button id="btnStop" class="danger" onclick="stopRecording()" disabled>録音停止</button>
+            <span id="recordingStatus" class="status-idle">待機中</span>
+        </div>
+
+        <div style="margin-top:15px;">
+            リアルタイム検出数: <span id="liveCount">0</span> 件
+        </div>
+
+        <div id="liveResultsSection" style="display:none; margin-top:15px;">
+            <h3>検出中の指摘</h3>
+            <table id="liveTable">
+                <thead>
+                    <tr>
+                        <th>時刻</th><th>小節</th><th>楽器</th><th>指摘内容</th>
+                    </tr>
+                </thead>
+                <tbody id="liveTableBody"></tbody>
+            </table>
+        </div>
+
+        <form id="finalizeForm" method="post" th:action="@{/rehearsal/audio/realtime-finalize}"
+              style="margin-top:15px; display:none;">
+            <button type="submit" class="success-btn">結果を確定してダウンロード可能にする</button>
+        </form>
+    </div>
+
+    <!-- ========== 分析結果（共通） ========== -->
+    <div th:if="${instructions}" class="results-section">
+        <h2>分析結果</h2>
+
+        <div class="summary" th:if="${totalCount > 0}">
+            <p><strong>抽出された指摘件数:</strong> <span th:text="${totalCount}"></span> 件</p>
+            <div th:if="${instrumentSummary.size() > 0}">
+                <p><strong>楽器別集計:</strong></p>
+                <ul>
+                    <li th:each="entry : ${instrumentSummary}">
+                        <span th:text="${entry.key}"></span>: <span th:text="${entry.value}"></span> 件
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="download-buttons" th:if="${instructions.size() > 0}">
+            <a href="/rehearsal/download/json" class="download-btn" download>
+                <button type="button">JSON でダウンロード</button>
+            </a>
+            <a href="/rehearsal/download/csv" class="download-btn" download>
+                <button type="button">CSV でダウンロード</button>
+            </a>
+            <a href="/rehearsal/download/excel" class="download-btn" download>
+                <button type="button">Excel でダウンロード</button>
+            </a>
+            <a href="/rehearsal/download/pdf" class="download-btn" download>
+                <button type="button">PDF でダウンロード</button>
+            </a>
+        </div>
+
+        <h3>詳細</h3>
+        <table th:if="${instructions.size() > 0}">
+            <thead>
+                <tr>
+                    <th>時刻</th><th>小節</th><th>楽器</th><th>指摘内容</th><th>YouTube リンク</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="instruction : ${instructions}">
+                    <td th:text="${instruction.timeStr}"></td>
+                    <td th:text="${instruction.measuresJoined}"></td>
+                    <td th:text="${instruction.instrumentsJoined}"></td>
+                    <td th:text="${instruction.text}"></td>
+                    <td>
+                        <a th:if="${instruction.youtubeLink}"
+                           th:href="${instruction.youtubeLink}" target="_blank">リンク</a>
+                        <span th:if="!${instruction.youtubeLink}">-</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p th:if="${instructions.size() == 0}" class="success">
+            指摘内容が見つかりませんでした。
+        </p>
+    </div>
+
+    <hr style="margin-top:30px;">
+    <p><a href="/">メニューに戻る</a></p>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+    // CSRF トークン（Spring Security）
+    const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+    // ----- タブ切り替え -----
+    const ACTIVE_TAB = /*[[${activeTab ?: 'youtube'}]]*/ 'youtube';
+
+    function activateTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === 'tab-' + tabName);
+        });
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+
+    activateTab(ACTIVE_TAB);
+
+    // ----- リアルタイム録音 -----
+    document.querySelectorAll('input[name="analysisModeRT"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const isAi = document.getElementById('am-ai-rt').checked;
+            document.getElementById('aiProviderGroupRT').style.display = isAi ? 'block' : 'none';
+        });
+    });
+
+    let mediaRecorder = null;
+    let intervalId = null;
+    let pollId = null;
+
+    function setRecordingStatus(state) {
+        const el = document.getElementById('recordingStatus');
+        el.className = 'status-' + state;
+        el.textContent = { idle: '待機中', recording: '● 録音中', processing: '⏳ 処理中' }[state];
+    }
+
+    function csrfHeaders() {
+        const h = {};
+        h[CSRF_HEADER] = CSRF_TOKEN;
+        return h;
+    }
+
+    async function sendChunk(blob) {
+        if (blob.size === 0) return;
+        setRecordingStatus('processing');
+
+        const analysisMode = document.querySelector('input[name="analysisModeRT"]:checked').value;
+        const aiProvider   = document.getElementById('aiProviderRT').value;
+
+        const fd = new FormData();
+        fd.append('chunk', blob, 'chunk.webm');
+        fd.append('analysisMode', analysisMode);
+        fd.append('aiProvider', aiProvider);
+
+        try {
+            const resp = await fetch('/rehearsal/audio/realtime-chunk', {
+                method: 'POST',
+                headers: csrfHeaders(),
+                body: fd
+            });
+            const data = await resp.json();
+            if (data.success) {
+                document.getElementById('liveCount').textContent = data.totalCount;
+            }
+        } catch (e) {
+            console.error('チャンク送信エラー:', e);
+        }
+
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            setRecordingStatus('recording');
+        }
+    }
+
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            // セッションをリセット
+            await fetch('/rehearsal/audio/realtime-reset', {
+                method: 'POST',
+                headers: csrfHeaders()
+            });
+            document.getElementById('liveCount').textContent = '0';
+            document.getElementById('liveTableBody').innerHTML = '';
+
+            const intervalSec = parseInt(document.getElementById('recordInterval').value);
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : 'audio/webm';
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                if (chunks.length > 0) {
+                    const blob = new Blob(chunks, { type: mimeType });
+                    chunks.length = 0;
+                    await sendChunk(blob);
+                }
+            };
+
+            // 指定間隔ごとに stop→再start してチャンクを送信
+            intervalId = setInterval(() => {
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                    // 新しい MediaRecorder を同じ stream から起動できないため再取得
+                    navigator.mediaDevices.getUserMedia({ audio: true }).then(newStream => {
+                        mediaRecorder = new MediaRecorder(newStream, { mimeType });
+                        const innerChunks = [];
+                        mediaRecorder.ondataavailable = e => {
+                            if (e.data.size > 0) innerChunks.push(e.data);
+                        };
+                        mediaRecorder.onstop = async () => {
+                            if (innerChunks.length > 0) {
+                                const b = new Blob(innerChunks, { type: mimeType });
+                                innerChunks.length = 0;
+                                await sendChunk(b);
+                            }
+                        };
+                        if (document.getElementById('btnStop').disabled === false) {
+                            mediaRecorder.start();
+                        }
+                    });
+                }
+            }, intervalSec * 1000);
+
+            mediaRecorder.start();
+            setRecordingStatus('recording');
+
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnStop').disabled  = false;
+            document.getElementById('liveResultsSection').style.display = 'block';
+            document.getElementById('finalizeForm').style.display = 'none';
+
+            // ポーリングで結果テーブルを更新
+            pollId = setInterval(updateLiveTable, 3000);
+
+        } catch (e) {
+            alert('マイクへのアクセスに失敗しました: ' + e.message);
+        }
+    }
+
+    async function stopRecording() {
+        clearInterval(intervalId);
+        clearInterval(pollId);
+
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        }
+
+        setRecordingStatus('idle');
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled  = true;
+
+        // 最終ポーリング
+        await updateLiveTable();
+        document.getElementById('finalizeForm').style.display = 'block';
+    }
+
+    async function updateLiveTable() {
+        try {
+            const resp = await fetch('/rehearsal/audio/realtime-status');
+            const data = await resp.json();
+            document.getElementById('liveCount').textContent = data.totalCount;
+
+            const tbody = document.getElementById('liveTableBody');
+            tbody.innerHTML = '';
+            (data.instructions || []).forEach(inst => {
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + escHtml(inst.timeStr || '') + '</td>' +
+                    '<td>' + escHtml(inst.measuresJoined || '-') + '</td>' +
+                    '<td>' + escHtml(inst.instrumentsJoined || '-') + '</td>' +
+                    '<td>' + escHtml(inst.text || '') + '</td>';
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error('ポーリングエラー:', e);
+        }
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+</script>
+</body>
 </html>

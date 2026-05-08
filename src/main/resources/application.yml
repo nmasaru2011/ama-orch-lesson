@@ -3,6 +3,10 @@ server:
 spring:
   application:
     name: LessonApplication
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
   datasource:
     url: jdbc:h2:mem:lessondb
     driver-class-name: org.h2.Driver
@@ -28,6 +32,13 @@ logging:
 
 app:
   version: '@project.version@'
+
+# AI API キー（環境変数で上書き可能）
+openai:
+  api-key: sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxx_xxxxxxxxxxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxx
+
+anthropic:
+  api-key: sk-ant-api03-xxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxx
 
 # YouTube API接続設定（Renderなどのサーバー環境対応）
 youtube:

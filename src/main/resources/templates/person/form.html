@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${isNew} ? '人物新規登録' : '人物編集'">人物登録</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #28a745; padding-bottom: 10px; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 14px; color: #555; }
+        input[type=text], input[type=number], select {
+            width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 4px;
+            font-size: 14px; box-sizing: border-box;
+        }
+        input[type=text]:focus, input[type=number]:focus, select:focus {
+            border-color: #28a745; outline: none; box-shadow: 0 0 0 2px rgba(40,167,69,0.25);
+        }
+        .btn { display: inline-block; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
+        .btn-success  { background-color: #28a745; color: white; }
+        .btn-success:hover  { background-color: #1e7e34; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #545b62; }
+        .readonly-field { background-color: #e9ecef; }
+        .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .hint { font-size: 11px; color: #888; margin-top: 2px; }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .form-group { flex: 1; }
+        .section-title { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase;
+                         letter-spacing: 0.05em; margin: 20px 0 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 th:text="${isNew} ? '人物新規登録' : '人物編集'">人物登録</h1>
+
+    <div th:if="${errorMsg}" class="alert alert-danger" th:text="${errorMsg}"></div>
+
+    <form th:action="${isNew} ? @{/person/new} : @{/person/{id}/edit(id=${person.personId})}"
+          th:object="${person}" method="post">
+
+        <div class="section-title">基本情報</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="personId">人物ID <span style="color:red">*</span></label>
+                <input type="number" id="personId" th:field="*{personId}"
+                       th:class="${isNew} ? '' : 'readonly-field'"
+                       th:readonly="${!isNew}" required>
+                <p class="hint">例: 10100（5刻みの整数）</p>
+            </div>
+            <div class="form-group">
+                <label for="account">アカウント</label>
+                <input type="text" id="account" th:field="*{account}" maxlength="32">
+            </div>
+            <div class="form-group">
+                <label for="musicianStatus">音楽的立場</label>
+                <select id="musicianStatus" th:field="*{musicianStatus}">
+                    <option value="">-- 未設定 --</option>
+                    <option value="A">A</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="lastName">苗字 <span style="color:red">*</span></label>
+                <input type="text" id="lastName" th:field="*{lastName}" maxlength="8" required>
+            </div>
+            <div class="form-group">
+                <label for="firstName">名 <span style="color:red">*</span></label>
+                <input type="text" id="firstName" th:field="*{firstName}" maxlength="8" required>
+            </div>
+            <div class="form-group">
+                <label for="oldName">旧姓</label>
+                <input type="text" id="oldName" th:field="*{oldName}" maxlength="8">
+            </div>
+        </div>
+
+        <div class="section-title">カナ</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="lastNameKana">苗字（カナ）</label>
+                <input type="text" id="lastNameKana" th:field="*{lastNameKana}" maxlength="12">
+            </div>
+            <div class="form-group">
+                <label for="firstNameKana">名（カナ）</label>
+                <input type="text" id="firstNameKana" th:field="*{firstNameKana}" maxlength="12">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="lastNameKanaEstimate">苗字（推定読） <span style="color:red">*</span></label>
+                <input type="text" id="lastNameKanaEstimate" th:field="*{lastNameKanaEstimate}" maxlength="12" required>
+            </div>
+            <div class="form-group">
+                <label for="firstNameKanaEstimate">名（推定読） <span style="color:red">*</span></label>
+                <input type="text" id="firstNameKanaEstimate" th:field="*{firstNameKanaEstimate}" maxlength="12" required>
+            </div>
+        </div>
+
+        <div class="section-title">活動情報</div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="mainActiveInstrument">主活動楽器</label>
+                <input type="text" id="mainActiveInstrument" th:field="*{mainActiveInstrument}" maxlength="32">
+            </div>
+            <div class="form-group">
+                <label for="mainActiveOrch">主活動オケ</label>
+                <input type="text" id="mainActiveOrch" th:field="*{mainActiveOrch}" maxlength="32">
+            </div>
+            <div class="form-group">
+                <label for="orchSince">オーケストラ歴（年）</label>
+                <input type="number" id="orchSince" th:field="*{orchSince}" min="0" max="100">
+            </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+            <button type="submit" class="btn btn-success" th:text="${isNew} ? '登録する' : '更新する'">登録する</button>
+            &nbsp;
+            <a href="/person" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

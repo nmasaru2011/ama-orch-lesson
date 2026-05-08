@@ -13,9 +13,16 @@
       "Bash(dir:*)",
       "Bash(./mvnw clean compile:*)",
       "Bash(ls:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(mvn -q dependency:build-classpath:*)",
+      "Bash(tr:*)",
+      "PowerShell(Tree \"c:\\\\_lab\\\\spring-appli\\\\ama-orch-lesson\\\\src\" -L 3)",
+      "Bash(powershell -command \"\\(Get-Content 'c:\\\\_lab\\\\spring-appli\\\\ama-orch-lesson\\\\src\\\\main\\\\resources\\\\data.sql'\\).Count\")"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\"
+    ]
   }
 }

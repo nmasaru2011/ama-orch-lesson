@@ -1,8 +1,8 @@
 package com.amaorchnsuaru.manager.lesson.service;
 
 import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

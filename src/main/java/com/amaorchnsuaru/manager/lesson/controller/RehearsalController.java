@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService.AiProvider;

@@ -33,7 +33,7 @@
         .page-btn.active { background-color: #007bff; color: white; border-color: #007bff; }
         .page-btn:hover:not(.active) { background-color: #e9ecef; }
         .kana { color: #888; font-size: 11px; }
-        .badge-A { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; background-color: #fff3cd; color: #856404; }
+        .badge-state { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; background-color: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
@@ -83,7 +83,9 @@
                 </td>
                 <td th:text="${p.oldName != null ? p.oldName : ''}"></td>
                 <td>
-                    <span th:if="${p.musicianStatus == 'A'}" class="badge-A">A</span>
+                    <th:block th:each="c : ${musicStates}">
+                        <span th:if="${c.categId == p.musicianStatus}" class="badge-state" th:text="${c.nameJp}"></span>
+                    </th:block>
                     <span th:if="${p.musicianStatus == null or p.musicianStatus == ''}">-</span>
                 </td>
                 <td th:text="${p.mainActiveInstrument != null ? p.mainActiveInstrument : '-'}"></td>

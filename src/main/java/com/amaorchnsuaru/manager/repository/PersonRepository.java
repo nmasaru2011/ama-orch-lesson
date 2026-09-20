@@ -12,6 +12,12 @@ import com.amaorchnsuaru.manager.entity.Person;
 
 public interface PersonRepository extends JpaRepository<Person, Long> {
 
+    /** 論理削除済みも含めた最大ID（採番用。なければ0） */
+    @Query(value = "SELECT COALESCE(MAX(person_id), 0) FROM person", nativeQuery = true)
+    long findMaxPersonId();
+
+    boolean existsByLastNameAndFirstName(String lastName, String firstName);
+
     Page<Person> findAllByOrderByLastNameKanaEstimateAscFirstNameKanaEstimateAsc(Pageable pageable);
 
     List<Person> findByMainActiveInstrumentOrderByLastNameKanaEstimateAscFirstNameKanaEstimateAsc(String mainActiveInstrument);

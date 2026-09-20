@@ -1,10 +1,13 @@
 package com.amaorchnsuaru.manager.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.amaorchnsuaru.manager.entity.Category;
 import com.amaorchnsuaru.manager.entity.Person;
+import com.amaorchnsuaru.manager.repository.CategoryRepository;
 import com.amaorchnsuaru.manager.repository.PersonRepository;
 
 @Controller
@@ -22,10 +27,20 @@ public class PersonController {
 
     private static final int PAGE_SIZE = 30;
 
-    private final PersonRepository repo;
+    private static final String MUSIC_STATE = "MUSIC_STATE";
 
-    public PersonController(PersonRepository repo) {
+    private final PersonRepository repo;
+    private final CategoryRepository categoryRepo;
+
+    public PersonController(PersonRepository repo, CategoryRepository categoryRepo) {
         this.repo = repo;
+        this.categoryRepo = categoryRepo;
+    }
+
+    /** 音楽的立場（MUSIC_STATE）の選択肢。全画面で共通に参照する */
+    @ModelAttribute("musicStates")
+    public List<Category> musicStates() {
+        return categoryRepo.findByCategTypeOrderByCategId(MUSIC_STATE);
     }
 
     @GetMapping
@@ -52,11 +67,20 @@ public class PersonController {
     }
 
     @PostMapping("/new")
-    public String create(@ModelAttribute Person person, RedirectAttributes ra) {
-        if (repo.existsById(person.getPersonId())) {
-            ra.addFlashAttribute("errorMsg", "ID " + person.getPersonId() + " は既に存在します。");
-            return "redirect:/person/new";
+    @Transactional
+    public String create(@ModelAttribute Person person,
+                         @RequestParam(defaultValue = "false") boolean confirmDuplicate,
+                         Model model, RedirectAttributes ra) {
+        if (!confirmDuplicate
+                && repo.existsByLastNameAndFirstName(person.getLastName(), person.getFirstName())) {
+            // 入力値を保持したまま再表示し、警告を出す（再送信で登録可能）
+            model.addAttribute("isNew", true);
+            model.addAttribute("duplicateWarning", true);
+            model.addAttribute("warnMsg", "同姓同名の人物が既に登録されています（" + person.getFullName()
+                    + "）。別人であれば、もう一度「登録する」を押してください。");
+            return "person/form";
         }
+        person.setPersonId(repo.findMaxPersonId() + 1);
         repo.save(person);
         ra.addFlashAttribute("successMsg", person.getFullName() + " を登録しました。");
         return "redirect:/person";

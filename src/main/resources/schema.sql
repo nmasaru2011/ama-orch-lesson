@@ -133,6 +133,26 @@ CREATE TABLE IF NOT EXISTS person (
     PRIMARY KEY (person_id)
 );
 -- =============================================
+-- category テーブル（区分マスタ）
+-- categ_type: 区分種別（例: MUSIC_STATE, MUSIC_TYPE）, categ_id: 区分ID
+-- =============================================
+CREATE TABLE IF NOT EXISTS category (
+    categ_type VARCHAR(32) NOT NULL,
+    categ_id VARCHAR(12) NOT NULL,
+    categ_alter_id VARCHAR(32),
+    name VARCHAR(256),
+    name_jp VARCHAR(128),
+    prop_str_1 TEXT,
+    prop_str_2 VARCHAR(128),
+    prop_num_1 INT,
+    prop_num_2 INT,
+    create_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    delete_datetime TIMESTAMP,
+    update_by VARCHAR(64) DEFAULT 'system',
+    PRIMARY KEY (categ_type, categ_id)
+);
+-- =============================================
 -- lesson_data テーブル（練習データ）
 -- =============================================
 CREATE TABLE IF NOT EXISTS lesson_data (
@@ -368,6 +388,14 @@ ADD COLUMN IF NOT EXISTS update_datetime TIMESTAMP;
 ALTER TABLE person
 ADD COLUMN IF NOT EXISTS delete_datetime TIMESTAMP;
 ALTER TABLE person
+ADD COLUMN IF NOT EXISTS update_by VARCHAR(64);
+ALTER TABLE category
+ADD COLUMN IF NOT EXISTS create_datetime TIMESTAMP;
+ALTER TABLE category
+ADD COLUMN IF NOT EXISTS update_datetime TIMESTAMP;
+ALTER TABLE category
+ADD COLUMN IF NOT EXISTS delete_datetime TIMESTAMP;
+ALTER TABLE category
 ADD COLUMN IF NOT EXISTS update_by VARCHAR(64);
 ALTER TABLE lesson_data
 ADD COLUMN IF NOT EXISTS create_datetime TIMESTAMP;

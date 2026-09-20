@@ -2,6 +2,8 @@ package com.amaorchnsuaru.manager.entity;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,7 +17,11 @@ import jakarta.persistence.PreUpdate;
  * 全テーブル共通の監査項目。
  * delete_datetime が null のレコードのみを有効データとして扱う（各エンティティの @SQLRestriction）。
  * 論理削除の機能は無いため、delete_datetime は登録処理では設定しない。
+ *
+ * <p>画面（Thymeleaf の JS 埋め込みなど）へ JSON 化する際は、日時型を扱えず
+ * 失敗するうえ画面でも使わないため、監査項目は出力しない。</p>
  */
+@JsonIgnoreProperties({"createDatetime", "updateDatetime", "deleteDatetime", "updateBy"})
 @MappedSuperclass
 public abstract class AuditableEntity {
 

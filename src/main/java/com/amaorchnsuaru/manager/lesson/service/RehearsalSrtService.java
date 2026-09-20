@@ -31,16 +31,16 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import com.lowagie.text.Anchor;
-import com.lowagie.text.Document;
-import com.lowagie.text.Element;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.Phrase;
-import com.lowagie.text.pdf.BaseFont;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
+import org.openpdf.text.Anchor;
+import org.openpdf.text.Document;
+import org.openpdf.text.Element;
+import org.openpdf.text.PageSize;
+import org.openpdf.text.Paragraph;
+import org.openpdf.text.Phrase;
+import org.openpdf.text.pdf.BaseFont;
+import org.openpdf.text.pdf.PdfPCell;
+import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfWriter;
 
 import com.amaorchnsuaru.manager.entity.Correction;
 import com.amaorchnsuaru.manager.entity.ExcludePattern;
@@ -503,11 +503,11 @@ public class RehearsalSrtService {
 		// 日本語フォント設定
 		BaseFont baseFont =
 				BaseFont.createFont("HeiseiKakuGo-W5", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
-		com.lowagie.text.Font titleFont =
-				new com.lowagie.text.Font(baseFont, 16, com.lowagie.text.Font.BOLD);
-		com.lowagie.text.Font headerFont =
-				new com.lowagie.text.Font(baseFont, 9, com.lowagie.text.Font.BOLD, Color.WHITE);
-		com.lowagie.text.Font cellFont = new com.lowagie.text.Font(baseFont, 8);
+		org.openpdf.text.Font titleFont =
+				new org.openpdf.text.Font(baseFont, 16, org.openpdf.text.Font.BOLD);
+		org.openpdf.text.Font headerFont =
+				new org.openpdf.text.Font(baseFont, 9, org.openpdf.text.Font.BOLD, Color.WHITE);
+		org.openpdf.text.Font cellFont = new org.openpdf.text.Font(baseFont, 8);
 
 		// タイトル
 		Paragraph title = new Paragraph("練習まとめ (" + instructions.size() + "件)", titleFont);
@@ -520,8 +520,8 @@ public class RehearsalSrtService {
 		table.setWidthPercentage(100);
 
 		// リンク用フォント（青色・下線）
-		com.lowagie.text.Font linkFont = new com.lowagie.text.Font(baseFont, 8,
-				com.lowagie.text.Font.UNDERLINE, new Color(30, 80, 220));
+		org.openpdf.text.Font linkFont = new org.openpdf.text.Font(baseFont, 8,
+				org.openpdf.text.Font.UNDERLINE, new Color(30, 80, 220));
 
 		// ヘッダー
 		Color headerBg = new Color(102, 126, 234);
@@ -563,7 +563,7 @@ public class RehearsalSrtService {
 		document.close();
 	}
 
-	private void addPdfCell(PdfPTable table, String text, com.lowagie.text.Font font,
+	private void addPdfCell(PdfPTable table, String text, org.openpdf.text.Font font,
 			Color bgColor) {
 		PdfPCell cell = new PdfPCell(new Phrase(text, font));
 		cell.setBackgroundColor(bgColor);

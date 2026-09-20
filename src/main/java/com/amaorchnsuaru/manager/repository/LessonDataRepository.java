@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+
 import com.amaorchnsuaru.manager.entity.LessonData;
 
 public interface LessonDataRepository extends JpaRepository<LessonData, Long> {
@@ -21,10 +22,11 @@ public interface LessonDataRepository extends JpaRepository<LessonData, Long> {
             SELECT 1 FROM concert_data c
             WHERE c.concert_main_id = l.concert_main_id AND c.orch_id = :orchId
         ))
-        AND (:year IS NULL OR YEAR(l.lesson_date) = :year)
+        AND (:year IS NULL OR EXTRACT(YEAR FROM l.lesson_date) = :year)
         AND (:future IS NULL
             OR (:future = 'future' AND l.lesson_date >= CURRENT_DATE)
             OR (:future = 'past'   AND l.lesson_date <  CURRENT_DATE))
+        AND l.delete_datetime IS NULL
         ORDER BY l.lesson_date DESC, l.concert_main_id, l.branch_no
         """,
         countQuery = """
@@ -34,10 +36,11 @@ public interface LessonDataRepository extends JpaRepository<LessonData, Long> {
             SELECT 1 FROM concert_data c
             WHERE c.concert_main_id = l.concert_main_id AND c.orch_id = :orchId
         ))
-        AND (:year IS NULL OR YEAR(l.lesson_date) = :year)
+        AND (:year IS NULL OR EXTRACT(YEAR FROM l.lesson_date) = :year)
         AND (:future IS NULL
             OR (:future = 'future' AND l.lesson_date >= CURRENT_DATE)
             OR (:future = 'past'   AND l.lesson_date <  CURRENT_DATE))
+        AND l.delete_datetime IS NULL
         """,
         nativeQuery = true)
     Page<LessonData> findByFilters(
@@ -46,6 +49,27 @@ public interface LessonDataRepository extends JpaRepository<LessonData, Long> {
             @Param("year")          Integer year,
             @Param("future")        String future,
             Pageable pageable);
+
+    @Query(value = """
+        SELECT * FROM lesson_data l
+        WHERE (:concertMainId IS NULL OR l.concert_main_id = :concertMainId)
+        AND (:orchId IS NULL OR EXISTS (
+            SELECT 1 FROM concert_data c
+            WHERE c.concert_main_id = l.concert_main_id AND c.orch_id = :orchId
+        ))
+        AND (:year IS NULL OR EXTRACT(YEAR FROM l.lesson_date) = :year)
+        AND (:future IS NULL
+            OR (:future = 'future' AND l.lesson_date >= CURRENT_DATE)
+            OR (:future = 'past'   AND l.lesson_date <  CURRENT_DATE))
+        AND l.delete_datetime IS NULL
+        ORDER BY l.lesson_date ASC, l.concert_main_id, l.branch_no
+        """,
+        nativeQuery = true)
+    List<LessonData> findAllByFilters(
+            @Param("concertMainId") String concertMainId,
+            @Param("orchId")        String orchId,
+            @Param("year")          Integer year,
+            @Param("future")        String future);
 
     @Query("SELECT MAX(l.branchNo) FROM LessonData l WHERE l.concertMainId = :concertMainId")
     Integer findMaxBranchNo(@Param("concertMainId") String concertMainId);

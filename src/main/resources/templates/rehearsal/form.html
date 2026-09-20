@@ -211,6 +211,47 @@
 
         a { color: #007bff; text-decoration: none; }
         a:hover { text-decoration: underline; }
+
+        /* ---- 演奏音解析（チューナー） ---- */
+        .tuner-box {
+            border: 3px solid #007bff;
+            border-radius: 12px;
+            padding: 20px 16px;
+            text-align: center;
+            max-width: 500px;
+            margin: 20px auto;
+            background: #fafafa;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .tuner-in-tune { border-color: #28a745; background: #f1f8f1; }
+        .tuner-off-key  { border-color: #dc3545; background: #fff5f5; }
+
+        #noteDisplay {
+            font-size: 72px;
+            font-weight: bold;
+            line-height: 1.1;
+            margin: 4px 0 2px;
+            transition: color 0.15s;
+        }
+        .note-ok      { color: #28a745; }
+        .note-off     { color: #dc3545; }
+        .note-neutral { color: #333; }
+
+        #freqDisplay { font-size: 18px; color: #666; margin-bottom: 10px; }
+
+        #offKeyAlert {
+            display: none;
+            text-align: center;
+            background: #ffebee;
+            color: #c62828;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 8px auto;
+            max-width: 500px;
+            animation: pitchBlink 0.7s step-end infinite;
+        }
+        @keyframes pitchBlink { 50% { opacity: 0.35; } }
     </style>
 </head>
 
@@ -227,6 +268,7 @@
         <button class="tab-btn" data-tab="youtube">YouTube / SRT</button>
         <button class="tab-btn" data-tab="audio">音声ファイル</button>
         <button class="tab-btn" data-tab="realtime">リアルタイム録音</button>
+        <button class="tab-btn" data-tab="pitch">演奏音解析</button>
     </div>
 
     <!-- ========== Tab 1: YouTube / SRT（既存） ========== -->
@@ -244,6 +286,25 @@
                     指定しない場合はYouTubeの自動字幕を使用します
                 </small>
             </div>
+            <div class="form-group">
+                <label>解析方法:</label>
+                <div class="radio-group">
+                    <input type="radio" name="analysisMode" id="yt-am-std" value="standard" checked>
+                    <label for="yt-am-std">標準（キーワードマッチング）</label>
+                    <input type="radio" name="analysisMode" id="yt-am-ai" value="ai">
+                    <label for="yt-am-ai">AI解析（誤字補正・精度向上）</label>
+                </div>
+            </div>
+            <div class="form-group" id="ytAiProviderGroup" style="display:none">
+                <label for="ytAiProvider">AIプロバイダー:</label>
+                <select id="ytAiProvider" name="aiProvider">
+                    <option value="anthropic">Anthropic Claude（推奨）</option>
+                    <option value="openai">OpenAI GPT-4o mini</option>
+                </select>
+                <small style="color:#888;display:block;margin-top:4px;">
+                    AIが字幕の誤字を文脈から推測・修正し、楽器・小節を正確に抽出します
+                </small>
+            </div>
             <button type="submit">分析</button>
         </form>
         <script>
@@ -254,6 +315,12 @@
                     e.preventDefault();
                     alert('SRTファイルまたはYouTube URLのいずれかを指定してください');
                 }
+            });
+            document.querySelectorAll('input[name="analysisMode"]').forEach(function(r) {
+                r.addEventListener('change', function() {
+                    var isAi = document.getElementById('yt-am-ai').checked;
+                    document.getElementById('ytAiProviderGroup').style.display = isAi ? 'block' : 'none';
+                });
             });
         </script>
     </div>
@@ -372,6 +439,108 @@
         </form>
     </div>
 
+    <!-- ========== Tab 4: 演奏音解析（ピッチ検出） ========== -->
+    <div id="tab-pitch" class="tab-panel">
+        <div class="info-box">
+            マイクから演奏音をリアルタイムに解析してピッチ（音高）を検出します。<br>
+            設定したしきい値より音程が外れると自動記録します。<br>
+            <strong>単音楽器向け</strong>（ヴァイオリン・ヴィオラ・チェロ・管楽器等の個人練習に最適）
+        </div>
+
+        <div class="form-group">
+            <label for="pitchA4Ref">基準ピッチ (A4):</label>
+            <select id="pitchA4Ref">
+                <option value="440">440 Hz（一般標準）</option>
+                <option value="441">441 Hz</option>
+                <option value="442" selected>442 Hz（オーケストラ標準）</option>
+                <option value="443">443 Hz</option>
+                <option value="444">444 Hz</option>
+                <option value="432">432 Hz（古楽ピッチ）</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>音律:</label>
+            <div class="radio-group">
+                <input type="radio" name="tuningMode" id="tm-et" value="et" checked>
+                <label for="tm-et">平均率</label>
+                <input type="radio" name="tuningMode" id="tm-pyth" value="pythagorean">
+                <label for="tm-pyth">純正五度律（弦楽器チューニング）</label>
+            </div>
+            <small id="tuningModeHint-et" style="color:#888; display:block; margin-top:3px;">
+                全音程を等分割（標準）
+            </small>
+            <small id="tuningModeHint-pyth" style="color:#007bff; display:none; margin-top:3px;">
+                基準 A から純正五度(3:2)で各弦の音を算出。
+                開放弦（D・G・C・E）が完全にチューニングされた状態を 0 セントとして判定します。
+            </small>
+        </div>
+
+        <div class="form-group">
+            <label for="pitchThreshold">外れ判定しきい値:</label>
+            <select id="pitchThreshold">
+                <option value="15">15セント（シビア）</option>
+                <option value="25" selected>25セント（標準）</option>
+                <option value="35">35セント（ゆるめ）</option>
+                <option value="50">50セント（半音の半分）</option>
+            </select>
+            <small style="color:#888; display:block; margin-top:3px;">1セント = 半音の 1/100（50セント = ちょうど半音ずれ）</small>
+        </div>
+
+        <div style="margin-top:15px;">
+            <button id="btnPitchStart" class="success-btn" onclick="startPitchAnalysis()">解析開始</button>
+            <button id="btnPitchStop" class="danger" onclick="stopPitchAnalysis()" disabled>解析停止</button>
+            <span id="pitchStatus" class="status-idle">待機中</span>
+        </div>
+
+        <!-- チューナー表示 -->
+        <div id="tunerDisplay" class="tuner-box" style="display:none;">
+            <div id="noteDisplay" class="note-neutral">--</div>
+            <div id="freqDisplay">-- Hz</div>
+            <canvas id="meterCanvas" width="460" height="68"></canvas>
+            <div id="centsDisplay" style="margin-top:6px; font-size:15px;"></div>
+        </div>
+
+        <!-- 外れアラート -->
+        <div id="offKeyAlert">⚠ 音程が外れています！</div>
+
+        <!-- ピッチ履歴グラフ -->
+        <div id="pitchGraphSection" style="display:none; margin-top:18px;">
+            <h3>ピッチ履歴グラフ</h3>
+            <canvas id="pitchGraph" width="700" height="150"
+                    style="border:1px solid #ddd; border-radius:4px; width:100%; max-width:700px;"></canvas>
+            <div style="font-size:12px; color:#888; margin-top:4px;">縦軸: 音程（上が高い）、横軸: 時間（左が古い）</div>
+        </div>
+
+        <!-- 音程別集計 -->
+        <div id="noteStatsSection" style="display:none; margin-top:20px;">
+            <h3>音程別集計 <span style="font-size:13px; color:#888;">（どの音を外しやすいか）</span></h3>
+            <p id="noteStatsEmpty" style="color:#888;">まだデータがありません（しばらく演奏してください）</p>
+            <div id="noteStatsTableWrap" style="display:none; overflow-x:auto;">
+                <table id="noteStatsTable">
+                    <thead>
+                        <tr>
+                            <th>音名</th>
+                            <th>五線譜</th>
+                            <th>分布</th>
+                            <th style="color:#28a745;">正確</th>
+                            <th style="color:#f57f17;">少しずれ</th>
+                            <th style="color:#dc3545;">大きくずれ</th>
+                            <th>外れ率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="noteStatsBody"></tbody>
+                </table>
+                <div style="margin-top:8px; font-size:12px; color:#888;">
+                    <span style="background:#28a745;color:white;padding:1px 6px;border-radius:3px;">正確</span> |ずれ| &lt; 15セント
+                    <span style="background:#f57f17;color:white;padding:1px 6px;border-radius:3px;">少しずれ</span> 15〜35セント
+                    <span style="background:#dc3545;color:white;padding:1px 6px;border-radius:3px;">大きくずれ</span> 35セント超
+                    &nbsp;（各行は外れ率の高い順）
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== 分析結果（共通） ========== -->
     <div th:if="${instructions}" class="results-section">
         <h2>分析結果</h2>
@@ -456,6 +625,15 @@
     });
 
     activateTab(ACTIVE_TAB);
+
+    // ----- 音律切り替えヒント -----
+    document.querySelectorAll('input[name="tuningMode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const isPyth = document.getElementById('tm-pyth').checked;
+            document.getElementById('tuningModeHint-et').style.display   = isPyth ? 'none'  : 'block';
+            document.getElementById('tuningModeHint-pyth').style.display = isPyth ? 'block' : 'none';
+        });
+    });
 
     // ----- リアルタイム録音 -----
     document.querySelectorAll('input[name="analysisModeRT"]').forEach(radio => {
@@ -628,6 +806,471 @@
 
     function escHtml(str) {
         return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // =========================================================
+    // 演奏音解析（リアルタイム ピッチ検出）
+    // =========================================================
+    const PITCH_NOTE_NAMES  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const PITCH_GRAPH_CAP   = 300; // グラフに表示するフレーム数
+
+    // 純正五度律と平均率の差分（セント）。インデックスは MIDI note % 12 (C=0, C#=1, ... B=11)
+    // 各値 = Pythagorean基準音 - 平均律基準音（正=高い, 負=低い）
+    // 算出: Aからの五度数 n → 差分 = n × (701.955 - 700) = n × 1.955 セント
+    //   C(-3)=-5.87  C#(+4)=+7.82  D(-1)=-1.96  D#(+6... 弦楽器では Eb=-6)=-11.73
+    //   E(+1)=+1.96  F(-4)=-7.82   F#(+3)=+5.87 G(-2)=-3.91
+    //   G#(+5)=+9.78 A(0)=0        A#(-5)=-9.78 B(+2)=+3.91
+    const PYTH_ET_DIFF = [
+        -5.865,  // C    (-3 fifths from A)
+        +7.820,  // C#   (+4 fifths)
+        -1.955,  // D    (-1 fifth)
+        -11.730, // Eb   (-6 fifths; 弦楽器ではフラット系優先)
+        +1.955,  // E    (+1 fifth)
+        -7.820,  // F    (-4 fifths)
+        +5.865,  // F#   (+3 fifths)
+        -3.910,  // G    (-2 fifths)
+        +9.775,  // G#   (+5 fifths)
+         0.000,  // A    (reference)
+        -9.775,  // Bb   (-5 fifths)
+        +3.910,  // B    (+2 fifths)
+    ];
+
+    // ドレミ音名（五線譜表示用）
+    const SOLFEGE_NAMES    = ['ド', 'ド♯', 'レ', 'レ♯', 'ミ', 'ファ', 'ファ♯', 'ソ', 'ソ♯', 'ラ', 'ラ♯', 'シ'];
+    // 各音名の全音階ステップ数（C=0,D=1,E=2,...,B=6）臨時記号は同じ幹音と同じ段に書く
+    const STAFF_DIATONIC   = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6];
+    const STAFF_ACCIDENTAL = ['', '#', '', '#', '', '', '#', '', '#', '', '#', ''];
+
+    let pitchAudioCtx   = null;
+    let pitchAnalyser   = null;
+    let pitchStream     = null;
+    let pitchAnimId     = null;
+    let pitchTimeBuf    = null;
+    let pitchGraphMidi  = []; // ローリング MIDI ノート番号配列（無音は null）
+    let noteStats       = new Map(); // 音名 → {accurate, slight, large}
+    let noteStatsFrameN = 0;
+
+    // --- 基本ユーティリティ ---
+
+    function pitchFreqToNote(freq, a4) {
+        if (freq <= 0) return null;
+        const semisET  = 12 * Math.log2(freq / a4);
+        const roundedET = Math.round(semisET);
+        const midi    = roundedET + 69; // A4 = MIDI 69
+        const octave  = Math.floor(midi / 12) - 1;
+        const noteIdx = ((midi % 12) + 12) % 12;
+
+        let cents;
+        const tuningMode = document.querySelector('input[name="tuningMode"]:checked').value;
+        if (tuningMode === 'pythagorean') {
+            // 純正五度律: 各音名の平均率からの差分を基準に0セントを再定義
+            const pythRefSemis = roundedET + PYTH_ET_DIFF[noteIdx] / 100;
+            cents = (semisET - pythRefSemis) * 100;
+        } else {
+            cents = (semisET - roundedET) * 100;
+        }
+
+        return { note: PITCH_NOTE_NAMES[noteIdx] + octave, solfege: SOLFEGE_NAMES[noteIdx], cents, midi, noteIdx, octave };
+    }
+
+    // テーブル用インライン SVG 五線譜
+    // MIDI 60(C4)以上 → ト音記号、未満 → ヘ音記号
+    // 音域外は 8va / 8vb で 1オクターブ折り返し
+    function noteToStaffSvg(midi) {
+        const W = 84, H = 64;
+        const lineGap = 8, staffY = 13;
+        const lx = 22, rx = W - 4, cx = 64, noteR = 4;
+
+        function stepToY(sv) { return staffY + (8 - sv) * lineGap / 2; }
+
+        // 音部記号・表示 MIDI の決定
+        const nIdx0 = ((midi % 12) + 12) % 12;
+        const oct0  = Math.floor(midi / 12) - 1;
+        const clef  = midi >= 60 ? 'treble' : 'bass';
+        let displayMidi = midi;
+        let octMark = '';
+
+        if (clef === 'treble') {
+            const tStep = STAFF_DIATONIC[nIdx0] + (oct0 - 4) * 7 - 2;
+            if (tStep > 10) { displayMidi = midi - 12; octMark = '8va'; }
+        } else {
+            const bStep = STAFF_DIATONIC[nIdx0] + (oct0 - 2) * 7 - 4;
+            if (bStep < -4) { displayMidi = midi + 12; octMark = '8vb'; }
+        }
+
+        const dNIdx = ((displayMidi % 12) + 12) % 12;
+        const dOct  = Math.floor(displayMidi / 12) - 1;
+        const step  = clef === 'treble'
+            ? STAFF_DIATONIC[dNIdx] + (dOct - 4) * 7 - 2   // ト音: E4=0
+            : STAFF_DIATONIC[dNIdx] + (dOct - 2) * 7 - 4;  // ヘ音: G2=0
+        const noteY = stepToY(step);
+
+        let svg = '<svg width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">';
+
+        // 音部記号（𝄞 ト音 / 𝄢 ヘ音）
+        if (clef === 'treble') {
+            svg += '<text x="11" y="' + (staffY + lineGap * 3) + '" font-size="30"' +
+                   ' font-family="Times New Roman,serif" fill="#555">𝄞</text>';
+        } else {
+            svg += '<text x="11" y="' + (staffY + lineGap * 1.6) + '" font-size="19"' +
+                   ' font-family="Times New Roman,serif" fill="#555">𝄢</text>';
+        }
+
+        // 五線
+        for (let i = 0; i < 5; i++) {
+            const y = staffY + i * lineGap;
+            svg += '<line x1="' + lx + '" y1="' + y + '" x2="' + rx + '" y2="' + y + '" stroke="#666" stroke-width="0.8"/>';
+        }
+
+        // 8va ラベル（上）
+        if (octMark === '8va') {
+            const ly = staffY - 4;
+            svg += '<text x="' + cx + '" y="' + ly + '" font-size="7" font-family="Arial"' +
+                   ' text-anchor="middle" fill="#1565c0">8va</text>';
+            svg += '<line x1="' + (cx-12) + '" y1="' + (ly + 2) + '" x2="' + (cx+12) + '" y2="' + (ly + 2) +
+                   '" stroke="#1565c0" stroke-width="0.6" stroke-dasharray="2,1.5"/>';
+        }
+        // 8vb ラベル（下）
+        if (octMark === '8vb') {
+            const ly = staffY + lineGap * 4 + 13;
+            svg += '<text x="' + cx + '" y="' + ly + '" font-size="7" font-family="Arial"' +
+                   ' text-anchor="middle" fill="#1565c0">8vb</text>';
+            svg += '<line x1="' + (cx-12) + '" y1="' + (ly + 3) + '" x2="' + (cx+12) + '" y2="' + (ly + 3) +
+                   '" stroke="#1565c0" stroke-width="0.6" stroke-dasharray="2,1.5"/>';
+        }
+
+        if (noteY < 1 || noteY > H - 1) {
+            svg += '<text x="' + cx + '" y="' + (H / 2 + 4) + '" font-size="8" text-anchor="middle" fill="#aaa">?</text>';
+            return svg + '</svg>';
+        }
+
+        // 加線（下）
+        if (step < 0) {
+            const lo = (step % 2 === 0) ? step : step + 1;
+            for (let ls = -2; ls >= lo; ls -= 2) {
+                const ly = stepToY(ls);
+                if (ly > 1 && ly < H - 1) svg += '<line x1="' + (cx-noteR-4) + '" y1="' + ly + '" x2="' + (cx+noteR+4) + '" y2="' + ly + '" stroke="#666" stroke-width="0.8"/>';
+            }
+        }
+        // 加線（上）
+        if (step > 8) {
+            const hi = (step % 2 === 0) ? step : step - 1;
+            for (let ls = 10; ls <= hi; ls += 2) {
+                const ly = stepToY(ls);
+                if (ly > 1 && ly < H - 1) svg += '<line x1="' + (cx-noteR-4) + '" y1="' + ly + '" x2="' + (cx+noteR+4) + '" y2="' + ly + '" stroke="#666" stroke-width="0.8"/>';
+            }
+        }
+
+        // 臨時記号（シャープ）
+        if (STAFF_ACCIDENTAL[dNIdx] === '#') {
+            svg += '<text x="' + (cx-noteR-2) + '" y="' + (noteY+4) + '" font-size="10"' +
+                   ' font-family="serif" font-weight="bold" text-anchor="end" fill="#111">♯</text>';
+        }
+
+        // 符頭
+        svg += '<ellipse cx="' + cx + '" cy="' + noteY + '" rx="' + noteR + '" ry="' + (noteR * 0.72).toFixed(1) +
+               '" transform="rotate(-15 ' + cx + ' ' + noteY + ')" fill="#111"/>';
+
+        // 符幹
+        const stemX    = step < 4 ? cx + noteR - 1 : cx - noteR + 1;
+        const stemEndY = step < 4 ? noteY - 22 : noteY + 22;
+        svg += '<line x1="' + stemX + '" y1="' + noteY + '" x2="' + stemX + '" y2="' + stemEndY + '" stroke="#111" stroke-width="1.2"/>';
+
+        return svg + '</svg>';
+    }
+
+    function acLag(buf, n, lag) {
+        let c = 0;
+        const lim = n - lag;
+        for (let i = 0; i < lim; i++) c += buf[i] * buf[i + lag];
+        return c;
+    }
+
+    /** 自己相関法によるピッチ検出（55 Hz〜1500 Hz の楽器音向け） */
+    function pitchDetect(buf, sr) {
+        const n   = buf.length;
+        let rms = 0;
+        for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
+        if (Math.sqrt(rms / n) < 0.008) return -1; // 無音
+
+        const minLag = Math.floor(sr / 1500);
+        const maxLag = Math.min(Math.floor(sr / 55), n - 2);
+
+        let bestC = 0, bestLag = -1;
+        for (let lag = minLag; lag <= maxLag; lag++) {
+            const c = acLag(buf, n, lag);
+            if (c > bestC) { bestC = c; bestLag = lag; }
+        }
+        if (bestLag < 0 || bestC < 0.05) return -1;
+
+        // 放物線補間でサブサンプル精度向上
+        if (bestLag > minLag && bestLag < maxLag) {
+            const c0 = acLag(buf, n, bestLag - 1);
+            const c2 = acLag(buf, n, bestLag + 1);
+            const a  = (c0 + c2 - 2 * bestC) / 2;
+            const b  = (c2 - c0) / 2;
+            if (a < 0) bestLag -= b / (2 * a);
+        }
+        return sr / bestLag;
+    }
+
+    // --- 開始 / 停止 ---
+
+    function startPitchAnalysis() {
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            .then(stream => {
+                pitchStream   = stream;
+                pitchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                pitchAnalyser = pitchAudioCtx.createAnalyser();
+                pitchAnalyser.fftSize = 2048;
+                pitchTimeBuf  = new Float32Array(pitchAnalyser.fftSize);
+
+                pitchAudioCtx.createMediaStreamSource(stream).connect(pitchAnalyser);
+
+                pitchGraphMidi  = [];
+                noteStats       = new Map();
+                noteStatsFrameN = 0;
+
+                document.getElementById('noteStatsBody').innerHTML          = '';
+                document.getElementById('noteStatsEmpty').style.display     = 'block';
+                document.getElementById('noteStatsTableWrap').style.display = 'none';
+
+                document.getElementById('btnPitchStart').disabled = true;
+                document.getElementById('btnPitchStop').disabled  = false;
+                setPitchStatus('recording', '● 解析中');
+                document.getElementById('tunerDisplay').style.display     = 'block';
+                document.getElementById('pitchGraphSection').style.display = 'block';
+                document.getElementById('noteStatsSection').style.display  = 'block';
+                document.getElementById('offKeyAlert').style.display      = 'none';
+
+                pitchAnimId = requestAnimationFrame(pitchFrame);
+            })
+            .catch(e => alert('マイクへのアクセスに失敗しました: ' + e.message));
+    }
+
+    function stopPitchAnalysis() {
+        if (pitchAnimId)  { cancelAnimationFrame(pitchAnimId); pitchAnimId = null; }
+        if (pitchStream)  { pitchStream.getTracks().forEach(t => t.stop()); pitchStream = null; }
+        if (pitchAudioCtx){ pitchAudioCtx.close(); pitchAudioCtx = null; }
+        pitchAnalyser = null;
+
+        document.getElementById('btnPitchStart').disabled = false;
+        document.getElementById('btnPitchStop').disabled  = true;
+        setPitchStatus('idle', '待機中');
+
+        const noteEl = document.getElementById('noteDisplay');
+        noteEl.textContent = '--'; noteEl.className = 'note-neutral';
+        document.getElementById('freqDisplay').textContent  = '-- Hz';
+        document.getElementById('centsDisplay').textContent = '';
+        document.getElementById('offKeyAlert').style.display = 'none';
+        document.getElementById('tunerDisplay').className   = 'tuner-box';
+        updateNoteStatsTable(); // 停止時に最終集計を反映
+    }
+
+    function setPitchStatus(state, text) {
+        const el = document.getElementById('pitchStatus');
+        el.className = 'status-' + state;
+        el.textContent = text;
+    }
+
+    // --- アニメーションフレーム（毎フレーム呼ばれる） ---
+
+    function pitchFrame() {
+        pitchAnalyser.getFloatTimeDomainData(pitchTimeBuf);
+        const a4  = parseFloat(document.getElementById('pitchA4Ref').value)    || 442;
+        const thr = parseFloat(document.getElementById('pitchThreshold').value) || 25;
+        const freq = pitchDetect(pitchTimeBuf, pitchAudioCtx.sampleRate);
+
+        const noteEl  = document.getElementById('noteDisplay');
+        const freqEl  = document.getElementById('freqDisplay');
+        const centsEl = document.getElementById('centsDisplay');
+        const alertEl = document.getElementById('offKeyAlert');
+        const boxEl   = document.getElementById('tunerDisplay');
+
+        if (freq > 0) {
+            const info = pitchFreqToNote(freq, a4);
+            const abs  = Math.abs(info.cents);
+            const off  = abs > thr;
+
+            noteEl.textContent = info.note;
+            noteEl.className   = off ? 'note-off' : (abs < 5 ? 'note-ok' : 'note-neutral');
+            freqEl.textContent = freq.toFixed(1) + ' Hz';
+
+            const sign  = info.cents >= 0 ? '+' : '';
+            const label = abs < 5 ? '（ほぼ正確）'
+                        : !off    ? '（少し' + (info.cents < 0 ? '低い' : '高い') + '）'
+                                  : '（外れています）';
+            centsEl.textContent  = sign + info.cents.toFixed(1) + ' セント ' + label;
+            centsEl.style.color  = off ? '#dc3545' : (abs < 5 ? '#28a745' : '#f57f17');
+            boxEl.className      = 'tuner-box ' + (off ? 'tuner-off-key' : 'tuner-in-tune');
+            alertEl.style.display = off ? 'block' : 'none';
+
+            drawPitchMeter(info.cents, thr);
+
+            pitchGraphMidi.push(info.midi);
+            if (pitchGraphMidi.length > PITCH_GRAPH_CAP) pitchGraphMidi.shift();
+
+            // 音程別集計（毎フレーム蓄積、60フレームごとにテーブル更新）
+            const key = info.note;
+            if (!noteStats.has(key)) noteStats.set(key, { accurate: 0, slight: 0, large: 0, midi: info.midi });
+            const ns = noteStats.get(key);
+            if (abs < 15) ns.accurate++;
+            else if (abs < 35) ns.slight++;
+            else ns.large++;
+            noteStatsFrameN++;
+            if (noteStatsFrameN % 60 === 0) updateNoteStatsTable();
+        } else {
+            // 無音
+            noteEl.textContent   = '--'; noteEl.className = 'note-neutral';
+            freqEl.textContent   = '-- Hz';
+            centsEl.textContent  = '（無音 / ノイズ）';
+            centsEl.style.color  = '#999';
+            boxEl.className      = 'tuner-box';
+            alertEl.style.display = 'none';
+            drawPitchMeter(0, thr);
+
+            pitchGraphMidi.push(null);
+            if (pitchGraphMidi.length > PITCH_GRAPH_CAP) pitchGraphMidi.shift();
+        }
+
+        drawPitchGraph();
+        pitchAnimId = requestAnimationFrame(pitchFrame);
+    }
+
+    // --- チューナーメーター描画 ---
+
+    function drawPitchMeter(cents, thr) {
+        const canvas = document.getElementById('meterCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const bx = 32, bw = W - 64, by = 24, bh = 22;
+        const cx = bx + bw / 2;
+        const thrW = (thr / 50) * (bw / 2);
+
+        // ゾーン背景
+        ctx.fillStyle = '#ffcdd2'; ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = '#fff9c4'; ctx.fillRect(bx + bw * 0.1, by, bw * 0.8, bh);
+        ctx.fillStyle = '#c8e6c9'; ctx.fillRect(cx - thrW, by, thrW * 2, bh);
+        ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        // 中心線
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx, by - 5); ctx.lineTo(cx, by + bh + 5); ctx.stroke();
+
+        // ニードル
+        const nx  = Math.max(bx + 4, Math.min(bx + bw - 4, cx + (cents / 50) * (bw / 2)));
+        const abs = Math.abs(cents);
+        ctx.fillStyle = abs > 40 ? '#b71c1c' : abs > thr ? '#e65100' : '#1b5e20';
+        ctx.beginPath();
+        ctx.moveTo(nx, by - 9);
+        ctx.lineTo(nx - 6, by + bh + 5);
+        ctx.lineTo(nx + 6, by + bh + 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // ラベル（ネスト配列リテラルは Thymeleaf 式と衝突するため展開）
+        ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+        const mLv = [-50, -25, 0, 25, 50];
+        const mLx = [bx, cx - thrW, cx, cx + thrW, bx + bw];
+        for (let li = 0; li < 5; li++) {
+            ctx.fillText((mLv[li] > 0 ? '+' : '') + mLv[li], mLx[li], by - 7);
+        }
+        ctx.textAlign = 'right'; ctx.fillText('♭', bx - 4, by + bh / 2 + 4);
+        ctx.textAlign = 'left';  ctx.fillText('♯', bx + bw + 4, by + bh / 2 + 4);
+    }
+
+    // --- ピッチ履歴グラフ描画 ---
+
+    function drawPitchGraph() {
+        const canvas = document.getElementById('pitchGraph');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const data  = pitchGraphMidi;
+        const valid = data.filter(v => v !== null);
+        if (valid.length < 2) return;
+
+        const minM = Math.min(...valid) - 1.5;
+        const maxM = Math.max(...valid) + 1.5;
+        const rng  = Math.max(maxM - minM, 3);
+
+        // 半音グリッド
+        ctx.lineWidth = 1;
+        for (let m = Math.floor(minM); m <= Math.ceil(maxM); m++) {
+            const y = H - ((m - minM) / rng) * H;
+            ctx.strokeStyle = '#eee';
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+            // 音名ラベル
+            const ni  = ((m % 12) + 12) % 12;
+            const oct = Math.floor(m / 12) - 1;
+            ctx.fillStyle = '#bbb'; ctx.font = '10px Arial'; ctx.textAlign = 'left';
+            ctx.fillText(PITCH_NOTE_NAMES[ni] + oct, 2, y - 1);
+        }
+
+        // ピッチ折れ線
+        const step = W / PITCH_GRAPH_CAP;
+        ctx.strokeStyle = '#007bff'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        let pen = false;
+        for (let i = 0; i < data.length; i++) {
+            if (data[i] === null) { pen = false; continue; }
+            const x = i * step;
+            const y = H - ((data[i] - minM) / rng) * H;
+            if (!pen) { ctx.moveTo(x, y); pen = true; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // --- 音程別集計テーブル更新 ---
+
+    function updateNoteStatsTable() {
+        const rows = [];
+        noteStats.forEach(function(s, note) {
+            const total = s.accurate + s.slight + s.large;
+            if (total < 3) return; // サンプル数が少ない音は除外
+            const offRate = (s.slight + s.large) / total;
+            rows.push({ note: note, midi: s.midi, accurate: s.accurate, slight: s.slight, large: s.large, total: total, offRate: offRate });
+        });
+        if (rows.length === 0) return;
+
+        // 外れ率の高い順、同率なら検出数の多い順
+        rows.sort(function(a, b) { return b.offRate - a.offRate || b.total - a.total; });
+
+        document.getElementById('noteStatsEmpty').style.display     = 'none';
+        document.getElementById('noteStatsTableWrap').style.display = 'block';
+
+        const tbody = document.getElementById('noteStatsBody');
+        tbody.innerHTML = '';
+        rows.forEach(function(r) {
+            const apct     = (r.accurate / r.total * 100).toFixed(1);
+            const spct     = (r.slight   / r.total * 100).toFixed(1);
+            const lpct     = (r.large    / r.total * 100).toFixed(1);
+            const offPct   = Math.round(r.offRate * 100);
+            const offColor = offPct > 40 ? '#dc3545' : offPct > 20 ? '#f57f17' : '#28a745';
+            const bar =
+                '<div style="display:flex;height:12px;border-radius:3px;overflow:hidden;width:120px;background:#eee;">' +
+                '<div style="background:#28a745;width:' + apct + '%;"></div>' +
+                '<div style="background:#f57f17;width:' + spct + '%;"></div>' +
+                '<div style="background:#dc3545;width:' + lpct + '%;"></div>' +
+                '</div>';
+            const tr = document.createElement('tr');
+            if (offPct > 40) tr.style.background = '#fff5f5';
+            tr.innerHTML =
+                '<td><strong>' + escHtml(r.note) + '</strong></td>' +
+                '<td style="padding:4px 6px;">' + (r.midi != null ? noteToStaffSvg(r.midi) : '') + '</td>' +
+                '<td>' + bar + '</td>' +
+                '<td style="color:#28a745; text-align:right;">' + r.accurate + '</td>' +
+                '<td style="color:#f57f17; text-align:right;">' + r.slight   + '</td>' +
+                '<td style="color:#dc3545; text-align:right;">' + r.large    + '</td>' +
+                '<td style="text-align:center;"><strong style="color:' + offColor + ';">' + offPct + '%</strong></td>';
+            tbody.appendChild(tr);
+        });
     }
 </script>
 </body>

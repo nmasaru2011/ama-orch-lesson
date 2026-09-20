@@ -1,18 +1,23 @@
 package com.amaorchnsuaru.manager.entity;
 
 import jakarta.persistence.Column;
+import org.hibernate.annotations.SQLRestriction;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@SQLRestriction("delete_datetime IS NULL")
 @Table(name = "lesson_data")
-public class LessonData {
+public class LessonData extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +30,7 @@ public class LessonData {
     private Integer branchNo;
 
     @Column(name = "lesson_date", nullable = false)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate lessonDate;
 
     @Column(name = "lesson_start_time_str", length = 32)

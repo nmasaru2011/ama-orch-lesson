@@ -1,13 +1,16 @@
 package com.amaorchnsuaru.manager.entity;
 
 import jakarta.persistence.Column;
+import org.hibernate.annotations.SQLRestriction;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
+@SQLRestriction("delete_datetime IS NULL")
 @Table(name = "concert_data")
-public class ConcertData {
+public class ConcertData extends AuditableEntity {
 
     @Id
     @Column(name = "concert_id", length = 12)

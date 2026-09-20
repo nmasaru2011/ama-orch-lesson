@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>舞台配置一覧</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
+        .container { background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #6f42c1; padding-bottom: 10px; }
+        .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .btn { display: inline-block; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; border: none; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-purple { background-color: #6f42c1; color: white; }
+        .btn-purple:hover { background-color: #5a32a3; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+        th { background: #f0ebff; color: #4a2b8c; padding: 8px; text-align: left; border-bottom: 2px solid #6f42c1; }
+        td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+        tr:hover { background: #faf8ff; }
+        .usage { font-size: 11px; color: #666; }
+        .empty { color: #888; font-size: 13px; margin-bottom: 16px; }
+        .new-form { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; }
+        .new-form input[type=text] { padding: 8px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; width: 320px; }
+        .section-title { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase;
+                         letter-spacing: 0.05em; margin: 20px 0 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>舞台配置一覧</h1>
+
+    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+
+    <p class="empty" th:if="${#lists.isEmpty(layouts)}">まだ配置が登録されていません。</p>
+
+    <table th:unless="${#lists.isEmpty(layouts)}">
+        <thead>
+            <tr>
+                <th style="width:70px;">配置ID</th>
+                <th>配置名</th>
+                <th style="width:70px;">席数</th>
+                <th>使用している曲</th>
+                <th style="width:260px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="l : ${layouts}">
+                <td th:text="${l.layoutId}"></td>
+                <td>
+                    <a th:href="@{/layout/{id}(id=${l.layoutId})}" th:text="${l.layoutName}"
+                       style="color:#6f42c1; font-weight:bold;"></a>
+                    <div class="usage" th:if="${l.memo}" th:text="${l.memo}"></div>
+                </td>
+                <td th:text="${seatCounts[l.layoutId]}"></td>
+                <td>
+                    <span class="usage" th:if="${#lists.isEmpty(usages[l.layoutId])}">（未使用）</span>
+                    <div class="usage" th:each="u : ${usages[l.layoutId]}">
+                        <a th:href="@{/concert/{id}/edit(id=${u.concertId})}"
+                           th:text="${u.concertName} + ' / No.' + ${u.programNo} + ' ' + ${u.musicTitle}"
+                           style="color:#666;"></a>
+                    </div>
+                </td>
+                <td>
+                    <a th:href="@{/layout/{id}(id=${l.layoutId})}" class="btn btn-secondary btn-sm">表示</a>
+                    <a th:href="@{/layout/{id}/export.pptx(id=${l.layoutId})}" class="btn btn-secondary btn-sm">pptx</a>
+                    <span sec:authorize="hasRole('ADMIN')">
+                        <a th:href="@{/layout/{id}/edit(id=${l.layoutId})}" class="btn btn-purple btn-sm">編集</a>
+                        <form th:action="@{/layout/{id}/duplicate(id=${l.layoutId})}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-secondary btn-sm">複製</button>
+                        </form>
+                        <form th:action="@{/layout/{id}/delete(id=${l.layoutId})}" method="post" style="display:inline;"
+                              onsubmit="return confirm('この配置を削除します。紐付いている曲目からは配置が外れます。よろしいですか？')">
+                            <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                        </form>
+                    </span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div sec:authorize="hasRole('ADMIN')">
+        <div class="section-title">配置を新規作成</div>
+        <div class="new-form">
+            <form th:action="@{/layout/new}" method="post">
+                <input type="text" name="layoutName" maxlength="64" placeholder="配置名（例: 定期演奏会 前半 配置）" required>
+                <label style="font-size:13px; margin-left:12px;">
+                    <input type="checkbox" name="withTemplate" value="true" checked>
+                    標準オーケストラ配置から始める
+                </label>
+                <button type="submit" class="btn btn-purple btn-sm" style="margin-left:12px;">作成して編集</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="margin-top:24px;">
+        <a href="/concert" class="btn btn-secondary">演奏会データ管理へ</a>
+        <a href="/" class="btn btn-secondary">トップへ</a>
+    </div>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

@@ -25,6 +25,8 @@ public class SecurityConfig {
 						.requestMatchers("/concert/new", "/concert/*/edit").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.POST, "/lesson/**").hasRole("ADMIN")
 						.requestMatchers("/lesson/new", "/lesson/*/edit").hasRole("ADMIN")
+						.requestMatchers(HttpMethod.POST, "/layout/**").hasRole("ADMIN")
+						.requestMatchers("/layout/*/edit").hasRole("ADMIN")
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")

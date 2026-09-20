@@ -6,12 +6,21 @@
     "configurations": [
         {
             "type": "java",
-            "name": "LessonApplication",
+            "name": "LessonApplication (H2 開発)",
             "request": "launch",
             "console": "integratedTerminal",
             "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
             "projectName": "manager",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "LessonApplication (PostgreSQL テスト)",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
+            "projectName": "manager",
+            "envFile": "${workspaceFolder}/.env.postgres"
         }
     ]
 }

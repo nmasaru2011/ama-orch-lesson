@@ -34,11 +34,21 @@
 <div class="container">
     <h1 th:text="${isNew} ? '練習データ 新規登録' : '練習データ 編集'">練習データ</h1>
 
-    <form th:action="${isNew} ? '/lesson/new' : '/lesson/' + lesson.id + '/edit'"
+    <form th:action="${isNew ? '/lesson/new' : '/lesson/' + lesson.id + '/edit'}"
           th:object="${lesson}" method="post">
 
         <!-- 演奏会情報 -->
         <div class="section-title">演奏会情報</div>
+
+        <div class="form-group">
+            <label for="orchFilter">オーケストラで絞り込み</label>
+            <select id="orchFilter" onchange="filterConcerts(this.value)">
+                <option value="">-- すべて --</option>
+                <option th:each="o : ${orchList}"
+                        th:value="${o.orchId}"
+                        th:text="${o.orchName}"></option>
+            </select>
+        </div>
 
         <div class="row">
             <div class="form-group">
@@ -48,6 +58,7 @@
                     <option value="">-- 演奏会を選択 --</option>
                     <option th:each="c : ${mainConcertList}"
                             th:value="${c.concertMainId}"
+                            th:attr="data-orch-id=${c.orchId}"
                             th:text="${c.concertName != null
                                        ? c.concertMainId + '  ' + c.concertName + '（' + c.orchId + '）'
                                        : c.concertMainId}"
@@ -108,19 +119,42 @@
             <button type="submit" class="btn btn-green"
                     th:text="${isNew} ? '登録する' : '更新する'">登録する</button>
             <a href="/lesson" class="btn btn-secondary">キャンセル</a>
+            <a href="/" class="btn btn-secondary">メニューへ</a>
         </div>
     </form>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script th:inline="javascript">
-    const maxBranchMap = {};
-
-    // ページロード時、既存の選択値に対してヒントを表示
     window.addEventListener('DOMContentLoaded', () => {
         const sel = document.getElementById('concertMainId');
-        if (sel && sel.value) updateBranchHint(sel.value);
+        if (sel && sel.value) {
+            // 選択中の演奏会に合わせてオーケストラフィルタを初期化
+            const selectedOpt = sel.querySelector('option[value="' + sel.value + '"]');
+            if (selectedOpt && selectedOpt.dataset.orchId) {
+                document.getElementById('orchFilter').value = selectedOpt.dataset.orchId;
+                filterConcerts(selectedOpt.dataset.orchId, sel.value);
+            }
+            updateBranchHint(sel.value);
+        }
     });
+
+    function filterConcerts(orchId, keepValue) {
+        const concertSel = document.getElementById('concertMainId');
+        const currentVal = keepValue !== undefined ? keepValue : concertSel.value;
+        let stillVisible = !currentVal;
+        concertSel.querySelectorAll('option[data-orch-id]').forEach(opt => {
+            const show = !orchId || opt.dataset.orchId === orchId;
+            opt.hidden = !show;
+            if (show && opt.value === currentVal) stillVisible = true;
+        });
+        if (!stillVisible) {
+            concertSel.value = '';
+            updateBranchHint('');
+        } else if (keepValue !== undefined) {
+            concertSel.value = keepValue;
+        }
+    }
 
     function updateBranchHint(concertMainId) {
         if (!concertMainId) {

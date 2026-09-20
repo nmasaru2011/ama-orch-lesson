@@ -23,6 +23,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
+import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService;
+import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService.AiProvider;
 import com.amaorchnsuaru.manager.lesson.service.RehearsalSrtService;
 import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionException;
 import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionService;
@@ -40,6 +42,9 @@ public class RehearsalController {
 	private YouTubeCaptionService youTubeCaptionService;
 
 	@Autowired
+	private AiAnalysisService aiAnalysisService;
+
+	@Autowired
 	private ObjectMapper objectMapper;
 
 	@GetMapping
@@ -49,8 +54,10 @@ public class RehearsalController {
 
 	@PostMapping("/analyze")
 	public String analyze(@RequestParam(value = "file", required = false) MultipartFile file,
-			@RequestParam(value = "youtubeUrl", required = false) String youtubeUrl, Model model,
-			HttpSession session, RedirectAttributes redirectAttributes) {
+			@RequestParam(value = "youtubeUrl", required = false) String youtubeUrl,
+			@RequestParam(value = "analysisMode", defaultValue = "standard") String analysisMode,
+			@RequestParam(value = "aiProvider", defaultValue = "anthropic") String aiProvider,
+			Model model, HttpSession session, RedirectAttributes redirectAttributes) {
 
 		boolean hasUrl = youtubeUrl != null && !youtubeUrl.isBlank();
 
@@ -68,17 +75,34 @@ public class RehearsalController {
 		}
 
 		try {
-			InputStream srtInputStream;
+			String srtContent;
 			if (file != null && !file.isEmpty()) {
-				srtInputStream = file.getInputStream();
+				srtContent = new String(file.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 			} else {
-				String srtContent = youTubeCaptionService.fetchCaptionAsSrt(youtubeUrl);
-				srtInputStream = new ByteArrayInputStream(
-						srtContent.getBytes(StandardCharsets.UTF_8));
+				srtContent = youTubeCaptionService.fetchCaptionAsSrt(youtubeUrl);
 			}
 
-			List<RehearsalInstruction> instructions =
-					rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
+			List<RehearsalInstruction> instructions;
+			if ("ai".equals(analysisMode)) {
+				AiProvider provider = "openai".equalsIgnoreCase(aiProvider)
+						? AiProvider.OPENAI : AiProvider.ANTHROPIC;
+				instructions = aiAnalysisService.analyzeWithAi(srtContent, provider);
+				// AI解析ではYouTubeリンクが含まれないため補完する
+				if (hasUrl) {
+					String videoId = extractVideoId(youtubeUrl);
+					for (RehearsalInstruction inst : instructions) {
+						if (inst.getYoutubeLink() == null && videoId != null) {
+							inst.setYoutubeLink("https://www.youtube.com/watch?v=" + videoId
+									+ "&t=" + inst.getTotalSeconds() + "s");
+						}
+					}
+				}
+			} else {
+				InputStream srtInputStream = new ByteArrayInputStream(
+						srtContent.getBytes(StandardCharsets.UTF_8));
+				instructions = rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
+			}
+
 			Map<String, Integer> instrumentSummary =
 					rehearsalSrtService.countByInstrument(instructions);
 
@@ -87,11 +111,13 @@ public class RehearsalController {
 			model.addAttribute("totalCount", instructions.size());
 			model.addAttribute("youtubeUrl", youtubeUrl);
 
-			// セッションに結果を保持（ダウンロード用）
 			session.setAttribute("rehearsalInstructions", instructions);
 
 			return "rehearsal/form";
 
+		} catch (IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/rehearsal";
 		} catch (YouTubeCaptionException e) {
 			redirectAttributes.addFlashAttribute("error",
 					"YouTube字幕の取得に失敗しました: " + e.getMessage());
@@ -100,7 +126,22 @@ public class RehearsalController {
 			redirectAttributes.addFlashAttribute("error",
 					"ファイルの読み込みに失敗しました: " + e.getMessage());
 			return "redirect:/rehearsal";
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error",
+					"AI解析に失敗しました: " + e.getMessage());
+			return "redirect:/rehearsal";
 		}
+	}
+
+	private String extractVideoId(String youtubeUrl) {
+		if (youtubeUrl == null || youtubeUrl.isBlank()) return null;
+		java.util.regex.Matcher m1 = java.util.regex.Pattern
+				.compile("[?&]v=([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
+		if (m1.find()) return m1.group(1);
+		java.util.regex.Matcher m2 = java.util.regex.Pattern
+				.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
+		if (m2.find()) return m2.group(1);
+		return null;
 	}
 
 	@GetMapping("/download/json")

@@ -43,6 +43,10 @@
         .btn-clear { background-color: #6c757d; color: white; padding: 7px 12px;
                      border: none; border-radius: 4px; cursor: pointer; font-size: 13px; text-decoration: none; }
         .btn-clear:hover { background-color: #545b62; }
+        .search-bar select:disabled { background: #e9ecef; color: #aaa; }
+        .music-filter-badge { background: #f0ebff; border: 1px solid #c5b3e8; border-radius: 6px;
+                               padding: 8px 14px; margin-bottom: 14px; font-size: 13px; color: #4a2b8c; }
+        .music-filter-badge a { color: #6f42c1; margin-left: 10px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -69,9 +73,26 @@
             <input type="number" id="searchYear" name="year" min="1900" max="2099"
                    th:value="${selectedYear}" placeholder="例: 2023" style="width:100px;">
         </div>
+        <div>
+            <label for="composerSelect">作曲家</label>
+            <select id="composerSelect" onchange="onComposerChange()">
+                <option value="">-- すべて --</option>
+            </select>
+        </div>
+        <div>
+            <label for="musicSelect">曲</label>
+            <select id="musicSelect" name="musicId" disabled>
+                <option value="">-- 先に作曲家を選択 --</option>
+            </select>
+        </div>
         <button type="submit" class="btn-search">検索</button>
         <a href="/concert" class="btn-clear">クリア</a>
     </form>
+
+    <div class="music-filter-badge" th:if="${selectedMusicId}">
+        絞り込み中の曲: <strong id="selectedMusicLabel" th:text="${selectedMusicId}"></strong>
+        <a th:href="@{/concert(orchId=${selectedOrchId}, year=${selectedYear})}">✕ 曲の絞り込みを解除</a>
+    </div>
 
     <div class="toolbar">
         <span th:text="${concertPage.totalElements} + ' 件'"></span>
@@ -140,17 +161,72 @@
 
     <div class="pagination" th:if="${concertPage.totalPages > 1}">
         <a th:if="${!concertPage.first}"
-           th:href="@{/concert(page=${concertPage.number - 1}, orchId=${selectedOrchId}, year=${selectedYear})}"
+           th:href="@{/concert(page=${concertPage.number - 1}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            class="page-btn">‹ 前</a>
         <a th:each="i : ${#numbers.sequence(0, concertPage.totalPages - 1)}"
-           th:href="@{/concert(page=${i}, orchId=${selectedOrchId}, year=${selectedYear})}"
+           th:href="@{/concert(page=${i}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            th:text="${i + 1}"
            th:class="${i == concertPage.number} ? 'page-btn active' : 'page-btn'"></a>
         <a th:if="${!concertPage.last}"
-           th:href="@{/concert(page=${concertPage.number + 1}, orchId=${selectedOrchId}, year=${selectedYear})}"
+           th:href="@{/concert(page=${concertPage.number + 1}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            class="page-btn">次 ›</a>
     </div>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script th:inline="javascript">
+const MUSIC_LIST = /*[[${musicList}]]*/ [];
+const SELECTED_MUSIC_ID = /*[[${selectedMusicId}]]*/ null;
+
+let musicIndex = [];
+
+window.addEventListener('DOMContentLoaded', function() {
+    musicIndex = (MUSIC_LIST || []).map(m => ({
+        id:           m.musicId,
+        composerId:   m.composerId,
+        composerName: m.composerName,
+        titleJp:      m.musicTitleFormalJp
+    }));
+
+    const compSel = document.getElementById('composerSelect');
+    const seen = new Map();
+    musicIndex.forEach(m => { if (!seen.has(m.composerId)) seen.set(m.composerId, m.composerName); });
+    [...seen.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'ja'))
+        .forEach(([id, name]) => {
+            const opt = document.createElement('option');
+            opt.value = id; opt.textContent = name;
+            compSel.appendChild(opt);
+        });
+
+    if (SELECTED_MUSIC_ID) {
+        const current = musicIndex.find(m => m.id === SELECTED_MUSIC_ID);
+        if (current) {
+            compSel.value = current.composerId;
+            onComposerChange();
+            document.getElementById('musicSelect').value = SELECTED_MUSIC_ID;
+            const label = document.getElementById('selectedMusicLabel');
+            if (label) label.textContent = current.composerName + ' / ' + current.titleJp;
+        }
+    }
+});
+
+function onComposerChange() {
+    const composerId = document.getElementById('composerSelect').value;
+    const musicSel = document.getElementById('musicSelect');
+
+    musicSel.innerHTML = '';
+    if (!composerId) {
+        musicSel.innerHTML = '<option value="">-- 先に作曲家を選択 --</option>';
+        musicSel.disabled = true;
+        return;
+    }
+
+    musicSel.appendChild(new Option('-- すべて --', ''));
+    musicIndex.filter(m => m.composerId === composerId).forEach(m => {
+        musicSel.appendChild(new Option(m.titleJp, m.id));
+    });
+    musicSel.disabled = false;
+}
+</script>
 </body>
 </html>

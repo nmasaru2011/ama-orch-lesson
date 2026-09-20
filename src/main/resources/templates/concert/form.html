@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 860px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
+        body { font-family: Arial, sans-serif; max-width: 1040px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
         .container { background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #6f42c1; padding-bottom: 10px; }
         .form-group { margin-bottom: 14px; }
@@ -32,6 +32,23 @@
         .form-row .form-group { flex: 1; }
         .section-title { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase;
                          letter-spacing: 0.05em; margin: 20px 0 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .program-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+        .program-table th { background: #f0ebff; color: #4a2b8c; padding: 6px 8px; text-align: left; border-bottom: 2px solid #6f42c1; }
+        .program-table td { padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .program-table tr:hover { background: #faf8ff; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .add-program-form { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-top: 8px; }
+        .cascade-steps { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+        .cascade-step { flex: 1; min-width: 160px; }
+        .cascade-step label { font-size: 13px; font-weight: bold; color: #4a2b8c; margin-bottom: 4px; }
+        .cascade-step select { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        .cascade-step select:disabled { background: #e9ecef; color: #aaa; }
+        .selected-music-box { background: #f0ebff; border: 1px solid #c5b3e8; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; font-size: 13px; display: none; }
+        .selected-music-box .music-name { font-weight: bold; color: #4a2b8c; }
+        .manual-title-toggle { font-size: 12px; color: #6f42c1; cursor: pointer; text-decoration: underline; margin-bottom: 6px; display: inline-block; }
+        .manual-input-area { display: none; }
     </style>
 </head>
 <body>
@@ -222,11 +239,146 @@
             <button type="submit" class="btn btn-purple" th:text="${isNew} ? '登録する' : '更新する'">登録する</button>
             &nbsp;
             <a href="/concert" class="btn btn-secondary">キャンセル</a>
+            <a href="/" class="btn btn-secondary">メニューへ</a>
         </div>
     </form>
+
+    <!-- 曲目プログラム（編集時のみ） -->
+    <div th:if="${!isNew}" style="margin-top: 32px;">
+        <div class="section-title" style="font-size:14px; color:#4a2b8c; border-bottom:2px solid #6f42c1; margin-bottom:12px;">
+            曲目プログラム
+        </div>
+
+        <div th:if="${programError}" class="alert alert-danger" th:text="${programError}"></div>
+
+        <!-- 既存プログラム一覧 -->
+        <div th:if="${#lists.isEmpty(programs)}" style="color:#888; font-size:13px; margin-bottom:12px;">
+            まだ曲目が登録されていません。
+        </div>
+        <table th:unless="${#lists.isEmpty(programs)}" class="program-table">
+            <thead>
+                <tr>
+                    <th style="width:40px;">No</th>
+                    <th>曲名</th>
+                    <th style="width:120px;">曲ID</th>
+                    <th style="width:100px;">一部</th>
+                    <th>メモ</th>
+                    <th style="width:230px;">舞台配置</th>
+                    <th style="width:60px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="prog : ${programs}">
+                    <td th:text="${prog.programNo}"></td>
+                    <td th:text="${prog.musicTitleFormalJp}"></td>
+                    <td th:text="${prog.musicId}"></td>
+                    <td th:text="${prog.fromPart}"></td>
+                    <td th:text="${prog.memo}"></td>
+                    <td>
+                        <!-- 配置済み: 配置名のリンクと解除 -->
+                        <div th:if="${prog.layoutId != null}">
+                            <a th:href="@{/layout/{lid}/edit(lid=${prog.layoutId})}"
+                               th:text="${layoutNameMap[prog.layoutId] != null ? layoutNameMap[prog.layoutId] : '配置ID ' + prog.layoutId}"
+                               style="color:#6f42c1; font-weight:bold;">配置</a>
+                            <form th:action="@{/concert/{id}/program/{no}/layout(id=${concert.concertId},no=${prog.programNo})}"
+                                  method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-secondary btn-sm">解除</button>
+                            </form>
+                        </div>
+                        <!-- 未設定: 既存配置の紐付け、または新規作成 -->
+                        <div th:if="${prog.layoutId == null}" style="display:flex; gap:4px; flex-wrap:wrap;">
+                            <form th:action="@{/concert/{id}/program/{no}/layout(id=${concert.concertId},no=${prog.programNo})}"
+                                  method="post" style="display:flex; gap:4px;">
+                                <select name="layoutId" style="font-size:11px; width:110px; padding:2px 4px;">
+                                    <option value="">-- 既存から --</option>
+                                    <option th:each="l : ${layoutList}"
+                                            th:value="${l.layoutId}" th:text="${l.layoutName}"></option>
+                                </select>
+                                <button type="submit" class="btn btn-secondary btn-sm">紐付</button>
+                            </form>
+                            <form th:action="@{/concert/{id}/program/{no}/layout/new(id=${concert.concertId},no=${prog.programNo})}"
+                                  method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-purple btn-sm">新規作成</button>
+                            </form>
+                        </div>
+                    </td>
+                    <td>
+                        <form th:action="@{/concert/{id}/program/{no}/delete(id=${concert.concertId},no=${prog.programNo})}"
+                              method="post" style="display:inline;"
+                              onsubmit="return confirm('削除しますか？')">
+                            <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 曲目追加フォーム -->
+        <div class="add-program-form">
+            <div style="font-weight:bold; font-size:13px; color:#4a2b8c; margin-bottom:12px;">曲目を追加</div>
+            <form th:action="@{/concert/{id}/program/add(id=${concert.concertId})}" method="post">
+
+                <!-- 3段階カスケード選択 -->
+                <div class="cascade-steps">
+                    <div class="cascade-step">
+                        <label>① 作曲家</label>
+                        <select id="composerSelect" onchange="onComposerChange()">
+                            <option value="">-- 選択 --</option>
+                        </select>
+                    </div>
+                    <div class="cascade-step">
+                        <label>② 曲種別</label>
+                        <select id="typeSelect" onchange="onTypeChange()" disabled>
+                            <option value="">-- 先に作曲家を選択 --</option>
+                        </select>
+                    </div>
+                    <div class="cascade-step">
+                        <label>③ 曲</label>
+                        <select id="musicSelect" onchange="onMusicChange()" disabled>
+                            <option value="">-- 先に種別を選択 --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 選択中の曲 表示 -->
+                <div class="selected-music-box" id="selectedMusicBox">
+                    <span class="music-name" id="selectedMusicDisplay"></span>
+                    <button type="button" onclick="clearMusicSelection()"
+                            style="float:right; background:none; border:none; color:#888; cursor:pointer; font-size:12px;">✕ クリア</button>
+                </div>
+
+                <!-- hidden -->
+                <input type="hidden" name="musicId" id="selectedMusicId">
+                <input type="hidden" name="musicTitleFormalJp" id="selectedMusicTitle">
+
+                <!-- 直接入力（マスターにない場合） -->
+                <span class="manual-title-toggle" onclick="toggleManualInput()">マスターにない曲を直接入力する</span>
+                <div class="manual-input-area" id="manualInputArea">
+                    <div class="form-group">
+                        <label>曲名（直接入力）<span style="color:red">*</span></label>
+                        <input type="text" id="manualTitle" maxlength="500"
+                               placeholder="例: ベートーヴェン / 交響曲第5番「運命」">
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group" style="flex:0 0 200px;">
+                        <label>一部（from part）</label>
+                        <input type="text" name="fromPart" maxlength="64" placeholder="例: 第2楽章">
+                    </div>
+                    <div class="form-group">
+                        <label>メモ</label>
+                        <textarea name="memo" style="height:38px; resize:vertical;"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-purple btn-sm" onclick="return prepareSubmit()">追加</button>
+            </form>
+        </div>
+    </div>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
-<script>
+<script th:inline="javascript">
 function generateIds() {
     const year  = parseInt(document.getElementById('concertYear')?.value  || '0');
     const month = parseInt(document.getElementById('concertMonth')?.value || '0');
@@ -254,10 +406,142 @@ function updateConductorName(sel) {
     }
 }
 
-// 初期表示
+// =============================================
+// 曲マスターデータ（Thymeleafで埋め込む）
+// =============================================
+const MUSIC_LIST = /*[[${musicList}]]*/ [];
+
+const TYPE_LABELS = {
+    'Aa':'交響曲', 'Ab':'交響曲（その他）', 'Az':'その他交響曲',
+    'Ba':'管弦楽曲', 'Bb':'コンサート序曲', 'Bd':'組曲・舞曲', 'Bz':'その他管弦楽',
+    'Ca':'ヴァイオリン協奏曲', 'Cb':'ヴィオラ協奏曲', 'Cc':'チェロ協奏曲',
+    'Cd':'クラリネット協奏曲', 'Ce':'フルート協奏曲', 'Cf':'ファゴット協奏曲',
+    'Cg':'オーボエ協奏曲', 'Cj':'ホルン協奏曲', 'Cl':'ピアノ協奏曲', 'Cz':'その他協奏曲',
+    'Da':'オペラ', 'Db':'序曲（オペラ等）', 'Dc':'交響詩', 'Dd':'劇音楽', 'Dx':'その他声楽・舞台',
+    'Fc':'弦楽四重奏', 'Fd':'弦楽五重奏', 'Fj':'室内楽', 'Fz':'その他室内楽',
+    'Ga':'ピアノ独奏', 'Gl':'その他独奏曲', 'Ha':'声楽曲', 'Zz':'詳細不明'
+};
+
+let musicIndex = [];
+
 window.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('concertYear')) generateIds();
+    buildMusicIndex();
 });
+
+function buildMusicIndex() {
+    musicIndex = (MUSIC_LIST || []).map(m => ({
+        id:          m.musicId,
+        composerId:  m.composerId,
+        composerName:m.composerName,
+        typeId:      m.musicTypeId || 'Zz',
+        titleJp:     m.musicTitleFormalJp,
+        label:       m.composerName + ' / ' + m.musicTitleFormalJp
+    }));
+
+    // 作曲家セレクト構築（重複除去・名前順）
+    const compSel = document.getElementById('composerSelect');
+    if (!compSel) return;
+    const seen = new Map();
+    musicIndex.forEach(m => { if (!seen.has(m.composerId)) seen.set(m.composerId, m.composerName); });
+    [...seen.entries()]
+        .sort((a,b) => a[1].localeCompare(b[1], 'ja'))
+        .forEach(([id, name]) => {
+            const opt = document.createElement('option');
+            opt.value = id; opt.textContent = name;
+            compSel.appendChild(opt);
+        });
+}
+
+function onComposerChange() {
+    const composerId = document.getElementById('composerSelect').value;
+    const typeSel = document.getElementById('typeSelect');
+    const musicSel = document.getElementById('musicSelect');
+
+    typeSel.innerHTML = '<option value="">-- 選択 --</option>';
+    musicSel.innerHTML = '<option value="">-- 先に種別を選択 --</option>';
+    typeSel.disabled = true;
+    musicSel.disabled = true;
+    clearMusicSelection();
+
+    if (!composerId) return;
+
+    // この作曲家が持つ曲種別を収集
+    const types = new Map();
+    musicIndex.filter(m => m.composerId === composerId).forEach(m => {
+        if (!types.has(m.typeId)) types.set(m.typeId, TYPE_LABELS[m.typeId] || m.typeId);
+    });
+
+    [...types.entries()]
+        .sort((a,b) => a[0].localeCompare(b[0]))
+        .forEach(([id, label]) => {
+            const opt = document.createElement('option');
+            opt.value = id; opt.textContent = label ? label + ' (' + id + ')' : id;
+            typeSel.appendChild(opt);
+        });
+    typeSel.disabled = false;
+}
+
+function onTypeChange() {
+    const composerId = document.getElementById('composerSelect').value;
+    const typeId = document.getElementById('typeSelect').value;
+    const musicSel = document.getElementById('musicSelect');
+
+    musicSel.innerHTML = '<option value="">-- 選択 --</option>';
+    musicSel.disabled = true;
+    clearMusicSelection();
+
+    if (!typeId) return;
+
+    const filtered = musicIndex.filter(m => m.composerId === composerId && m.typeId === typeId);
+    filtered.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.titleJp;
+        opt.dataset.label = m.label;
+        musicSel.appendChild(opt);
+    });
+    musicSel.disabled = false;
+}
+
+function onMusicChange() {
+    const sel = document.getElementById('musicSelect');
+    if (!sel.value) { clearMusicSelection(); return; }
+    const opt = sel.options[sel.selectedIndex];
+    const label = opt.dataset.label || opt.textContent;
+    document.getElementById('selectedMusicId').value = sel.value;
+    document.getElementById('selectedMusicTitle').value = label;
+    document.getElementById('selectedMusicDisplay').textContent = label;
+    document.getElementById('selectedMusicBox').style.display = 'block';
+    // 直接入力エリアを閉じる
+    document.getElementById('manualInputArea').style.display = 'none';
+    document.getElementById('manualTitle').value = '';
+}
+
+function clearMusicSelection() {
+    document.getElementById('selectedMusicId').value = '';
+    document.getElementById('selectedMusicTitle').value = '';
+    const box = document.getElementById('selectedMusicBox');
+    if (box) box.style.display = 'none';
+}
+
+function toggleManualInput() {
+    const area = document.getElementById('manualInputArea');
+    area.style.display = area.style.display === 'none' ? 'block' : 'none';
+    if (area.style.display === 'block') clearMusicSelection();
+}
+
+function prepareSubmit() {
+    const selTitle = document.getElementById('selectedMusicTitle').value.trim();
+    const manTitle = (document.getElementById('manualTitle')?.value || '').trim();
+    const final = selTitle || manTitle;
+    if (!final) { alert('曲を選択するか、曲名を直接入力してください。'); return false; }
+    if (!selTitle && manTitle) {
+        document.getElementById('selectedMusicTitle').value = manTitle;
+        document.getElementById('selectedMusicId').value = '';
+    }
+    return true;
+}
 </script>
 </body>
 </html>

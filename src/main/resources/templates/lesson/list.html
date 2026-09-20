@@ -42,8 +42,22 @@
         .btn-clear { background-color: #6c757d; color: white; padding: 7px 12px;
                      border: none; border-radius: 4px; cursor: pointer; font-size: 13px; text-decoration: none; }
         .btn-clear:hover { background-color: #545b62; }
+        .btn-ics  { background-color: #0d6efd; color: white; }
+        .btn-ics:hover  { background-color: #0b5ed7; }
+        .btn-copy { background-color: #20c997; color: white; }
+        .btn-copy:hover { background-color: #1aaa80; }
         .badge-future { background: #cce5ff; color: #004085; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
         .badge-past   { background: #e2e3e5; color: #383d41; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+        .new-form-section { background: #f0fff4; border: 1px solid #c3e6cb; border-radius: 6px; padding: 16px; margin-top: 24px; }
+        .new-form-section h3 { font-size: 15px; font-weight: bold; color: #28a745; border-left: 4px solid #28a745; padding-left: 8px; margin: 0 0 12px; }
+        .nf-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .nf-group { flex: 1; min-width: 100px; }
+        .nf-group label { display: block; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 3px; }
+        .nf-group input, .nf-group select, .nf-group textarea {
+            width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px;
+            font-size: 13px; box-sizing: border-box; }
+        .nf-group textarea { height: 56px; resize: vertical; }
+        .nf-hint { font-size: 11px; color: #28a745; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -56,23 +70,24 @@
     <!-- 検索フォーム -->
     <form method="get" action="/lesson" class="search-bar">
         <div>
-            <label for="searchConcert">演奏会</label>
-            <select id="searchConcert" name="concertMainId" style="min-width:200px; max-width:300px;">
-                <option value="">-- すべて --</option>
-                <option th:each="c : ${mainConcertList}"
-                        th:value="${c.concertMainId}"
-                        th:text="${c.concertName != null ? c.concertName + '（' + c.orchId + '）' : c.concertMainId}"
-                        th:selected="${c.concertMainId == selectedConcertMainId}"></option>
-            </select>
-        </div>
-        <div>
             <label for="searchOrch">オーケストラ</label>
-            <select id="searchOrch" name="orchId">
+            <select id="searchOrch" name="orchId" onchange="filterSearchConcerts(this.value)">
                 <option value="">-- すべて --</option>
                 <option th:each="o : ${orchList}"
                         th:value="${o.orchId}"
                         th:text="${o.orchName}"
                         th:selected="${o.orchId == selectedOrchId}"></option>
+            </select>
+        </div>
+        <div>
+            <label for="searchConcert">演奏会</label>
+            <select id="searchConcert" name="concertMainId" style="min-width:200px; max-width:300px;">
+                <option value="">-- すべて --</option>
+                <option th:each="c : ${mainConcertList}"
+                        th:value="${c.concertMainId}"
+                        th:attr="data-orch-id=${c.orchId}"
+                        th:text="${c.concertName != null ? c.concertName + '（' + c.orchId + '）' : c.concertMainId}"
+                        th:selected="${c.concertMainId == selectedConcertMainId}"></option>
             </select>
         </div>
         <div>
@@ -95,7 +110,17 @@
     <div class="toolbar">
         <span th:text="${lessonPage.totalElements} + ' 件'"></span>
         <div>
-            <a sec:authorize="hasRole('ADMIN')" href="/lesson/new" class="btn btn-green">+ 新規登録</a>
+            <a sec:authorize="hasRole('ADMIN')" href="#newLessonSection" class="btn btn-green">+ 新規登録</a>
+            &nbsp;
+            <a th:href="@{/lesson/export/ics(concertMainId=${selectedConcertMainId})}"
+               class="btn btn-ics">カレンダー(.ics)ダウンロード</a>
+            &nbsp;
+            <button id="copyTextBtn" type="button" class="btn btn-copy"
+                    th:attr="data-concert-id=${selectedConcertMainId},
+                             data-orch-id=${selectedOrchId},
+                             data-year=${selectedYear},
+                             data-future=${selectedFuture}"
+                    onclick="copyLessonText(this)">テキストコピー(LINE共有用)</button>
             &nbsp;
             <a href="/concert" class="btn btn-secondary">演奏会一覧へ</a>
             &nbsp;
@@ -173,7 +198,137 @@
            th:href="@{/lesson(page=${lessonPage.number + 1}, concertMainId=${selectedConcertMainId}, orchId=${selectedOrchId}, year=${selectedYear}, future=${selectedFuture})}"
            class="page-btn">次 ›</a>
     </div>
+
+    <!-- インライン新規登録フォーム -->
+    <div id="newLessonSection" class="new-form-section" sec:authorize="hasRole('ADMIN')">
+        <h3>+ 新規練習登録</h3>
+        <form th:action="@{/lesson/new}" method="post">
+            <div class="nf-row">
+                <div class="nf-group">
+                    <label>オーケストラ絞り込み</label>
+                    <select id="nfOrchFilter" onchange="nfFilterConcerts(this.value)">
+                        <option value="">-- すべて --</option>
+                        <option th:each="o : ${orchList}"
+                                th:value="${o.orchId}"
+                                th:text="${o.orchName}"></option>
+                    </select>
+                </div>
+                <div class="nf-group" style="flex:3">
+                    <label>演奏会 <span style="color:red">*</span></label>
+                    <select id="nfConcertMainId" name="concertMainId" required
+                            onchange="nfUpdateBranchHint(this.value)">
+                        <option value="">-- 演奏会を選択 --</option>
+                        <option th:each="c : ${mainConcertList}"
+                                th:value="${c.concertMainId}"
+                                th:attr="data-orch-id=${c.orchId}"
+                                th:text="${c.concertName != null
+                                           ? c.concertMainId + '  ' + c.concertName + '（' + c.orchId + '）'
+                                           : c.concertMainId}"></option>
+                    </select>
+                </div>
+                <div class="nf-group" style="max-width:90px">
+                    <label>枝番 <span style="color:red">*</span></label>
+                    <input type="number" name="branchNo" id="nfBranchNo" required min="1" value="1">
+                    <div id="nfBranchHint" class="nf-hint"></div>
+                </div>
+            </div>
+            <div class="nf-row">
+                <div class="nf-group" style="max-width:160px">
+                    <label>練習日 <span style="color:red">*</span></label>
+                    <input type="date" name="lessonDate" required>
+                </div>
+                <div class="nf-group" style="max-width:110px">
+                    <label>開始</label>
+                    <input type="text" name="lessonStartTimeStr" placeholder="09:00">
+                </div>
+                <div class="nf-group" style="max-width:110px">
+                    <label>終了</label>
+                    <input type="text" name="lessonEndTimeStr" placeholder="17:00">
+                </div>
+                <div class="nf-group">
+                    <label>場所</label>
+                    <input type="text" name="placeName" placeholder="例: 矢向地区センター">
+                </div>
+            </div>
+            <div class="nf-row">
+                <div class="nf-group">
+                    <label>内容</label>
+                    <textarea name="contain" placeholder="例: 午前：合奏　午後：分奏"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-green">登録する</button>
+        </form>
+    </div>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script th:inline="javascript">
+    function filterSearchConcerts(orchId) {
+        const concertSel = document.getElementById('searchConcert');
+        const currentVal = concertSel.value;
+        let stillVisible = !currentVal;
+        concertSel.querySelectorAll('option[data-orch-id]').forEach(opt => {
+            const show = !orchId || opt.dataset.orchId === orchId;
+            opt.hidden = !show;
+            if (show && opt.value === currentVal) stillVisible = true;
+        });
+        if (!stillVisible) concertSel.value = '';
+    }
+
+    function nfFilterConcerts(orchId) {
+        const sel = document.getElementById('nfConcertMainId');
+        const currentVal = sel.value;
+        let stillVisible = !currentVal;
+        sel.querySelectorAll('option[data-orch-id]').forEach(opt => {
+            const show = !orchId || opt.dataset.orchId === orchId;
+            opt.hidden = !show;
+            if (show && opt.value === currentVal) stillVisible = true;
+        });
+        if (!stillVisible) {
+            sel.value = '';
+            nfUpdateBranchHint('');
+        }
+    }
+
+    function nfUpdateBranchHint(concertMainId) {
+        if (!concertMainId) {
+            document.getElementById('nfBranchHint').textContent = '';
+            document.getElementById('nfBranchNo').value = 1;
+            return;
+        }
+        fetch('/lesson/maxBranch?concertMainId=' + encodeURIComponent(concertMainId))
+            .then(r => r.json())
+            .then(data => {
+                const next = (data.max || 0) + 1;
+                document.getElementById('nfBranchHint').textContent = '次は ' + next;
+                document.getElementById('nfBranchNo').value = next;
+            })
+            .catch(() => {});
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const orchVal = document.getElementById('searchOrch').value;
+        if (orchVal) filterSearchConcerts(orchVal);
+    });
+
+    function copyLessonText(btn) {
+        const params = new URLSearchParams();
+        if (btn.dataset.concertId) params.set('concertMainId', btn.dataset.concertId);
+        if (btn.dataset.orchId)    params.set('orchId',        btn.dataset.orchId);
+        if (btn.dataset.year)      params.set('year',          btn.dataset.year);
+        if (btn.dataset.future)    params.set('future',        btn.dataset.future);
+
+        fetch('/lesson/export/text?' + params.toString())
+            .then(r => r.text())
+            .then(text => {
+                navigator.clipboard.writeText(text).then(() => {
+                    const original = btn.textContent;
+                    btn.textContent = 'コピーしました！';
+                    btn.disabled = true;
+                    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+                });
+            })
+            .catch(() => alert('コピーに失敗しました。'));
+    }
+</script>
 </body>
 </html>

@@ -23,11 +23,24 @@
             "envFile": "${workspaceFolder}/ama-orch-web/.env.postgres"
         },
         {
-            "type": "pwa-chrome",
-            "name": "ama-orch-data-editor (ブラウザ)",
+            "type": "node",
+            "name": "ama-orch データエディター（Electron）",
             "request": "launch",
-            "file": "${workspaceFolder}/ama-orch-data-editor/index.html",
-            "userDataDir": "${workspaceFolder}/.work/chrome-data-editor"
+            "cwd": "${workspaceFolder}/ama-orch-data-editor",
+            "runtimeExecutable": "${workspaceFolder}/ama-orch-data-editor/node_modules/electron/cli.js",
+            "runtimeArgs": [
+                "--inspect=5858",
+                "."
+            ],
+            "env": {
+                "VITE_DEV_SERVER_URL": "http://127.0.0.1:5173"
+            },
+            "preLaunchTask": "ama-orch: Start Vite (Electron)",
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
         }
     ]
 }

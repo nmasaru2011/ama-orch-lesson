@@ -1,4 +1,7 @@
 target
+**/node_modules/
+**/dist/
+**/src-tauri/target/
 /src/test/resorces/*合奏*
 .env
 .env.postgres

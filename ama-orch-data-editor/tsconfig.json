@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "useDefineForClassFields": true,
+        "module": "CommonJS",
+        "moduleResolution": "Node",
+        "strict": true,
+        "noEmit": false,
+        "outDir": "dist-electron",
+        "rootDir": "src",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "types": [
+            "node"
+        ]
+    },
+    "include": [
+        "src"
+    ]
+}

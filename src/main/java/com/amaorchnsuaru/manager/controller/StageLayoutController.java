@@ -32,6 +32,7 @@ import com.amaorchnsuaru.manager.repository.ConcertProgramRepository;
 import com.amaorchnsuaru.manager.repository.PersonRepository;
 import com.amaorchnsuaru.manager.repository.StageLayoutRepository;
 import com.amaorchnsuaru.manager.repository.StageLayoutSeatRepository;
+import com.amaorchnsuaru.manager.service.StageLayout3dExportService;
 import com.amaorchnsuaru.manager.service.StageLayoutExportService;
 import com.amaorchnsuaru.manager.service.StageLayoutService;
 
@@ -50,6 +51,7 @@ public class StageLayoutController {
     private final PersonRepository          personRepo;
     private final StageLayoutService        layoutService;
     private final StageLayoutExportService  exportService;
+    private final StageLayout3dExportService export3dService;
 
     public StageLayoutController(StageLayoutRepository layoutRepo,
                                  StageLayoutSeatRepository seatRepo,
@@ -57,7 +59,8 @@ public class StageLayoutController {
                                  ConcertDataRepository concertRepo,
                                  PersonRepository personRepo,
                                  StageLayoutService layoutService,
-                                 StageLayoutExportService exportService) {
+                                 StageLayoutExportService exportService,
+                                 StageLayout3dExportService export3dService) {
         this.layoutRepo    = layoutRepo;
         this.seatRepo      = seatRepo;
         this.programRepo   = programRepo;
@@ -65,6 +68,7 @@ public class StageLayoutController {
         this.personRepo    = personRepo;
         this.layoutService = layoutService;
         this.exportService = exportService;
+        this.export3dService = export3dService;
     }
 
     /** 編集画面の人物プルダウン用（氏名とかなだけ持つ軽量データ） */
@@ -178,6 +182,18 @@ public class StageLayoutController {
                 .contentType(MediaType.parseMediaType("image/svg+xml; charset=UTF-8"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, attachment(layout, layoutId, "svg"))
                 .body(svg);
+    }
+
+    /** 3MF。ペイント3D・3Dビューアーで開ける（奏者は座った簡易モデル） */
+    @GetMapping("/{layoutId}/export.3mf")
+    public ResponseEntity<byte[]> export3mf(@PathVariable Long layoutId) throws IOException {
+        StageLayout layout = require(layoutId);
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        export3dService.write3mf(layout, seatRepo.findByLayoutIdOrderBySeatNoAsc(layoutId), buf);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("model/3mf"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, attachment(layout, layoutId, "3mf"))
+                .body(buf.toByteArray());
     }
 
     /**

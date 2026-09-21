@@ -236,6 +236,7 @@
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
         <a th:href="@{/layout/{id}/export.pptx(id=${layout.layoutId})}" class="btn btn-purple">PowerPoint (.pptx)</a>
         <a th:href="@{/layout/{id}/export.svg(id=${layout.layoutId})}" class="btn btn-secondary">SVG</a>
+        <a th:href="@{/layout/{id}/export.3mf(id=${layout.layoutId})}" class="btn btn-secondary">3D (.3mf / ペイント3D)</a>
         <span style="font-size:11px; color:#888;">
             保存済みの内容が出力されます。編集中の変更は先に「保存」してください。
         </span>

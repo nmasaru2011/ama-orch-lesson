@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "orch_data")
+@Table(name = "orch_mst")
 public class OrchData extends AuditableEntity {
 
     @Id

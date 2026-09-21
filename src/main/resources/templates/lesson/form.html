@@ -52,22 +52,22 @@
 
         <div class="row">
             <div class="form-group">
-                <label for="concertMainId">演奏会主ID <span style="color:red;">*</span></label>
-                <select id="concertMainId" th:field="*{concertMainId}" required
+                <label for="concertId">演奏会ID <span style="color:red;">*</span></label>
+                <select id="concertId" th:field="*{concertId}" required
                         onchange="updateBranchHint(this.value)">
                     <option value="">-- 演奏会を選択 --</option>
                     <option th:each="c : ${mainConcertList}"
-                            th:value="${c.concertMainId}"
+                            th:value="${c.concertId}"
                             th:attr="data-orch-id=${c.orchId}"
                             th:text="${c.concertName != null
-                                       ? c.concertMainId + '  ' + c.concertName + '（' + c.orchId + '）'
-                                       : c.concertMainId}"
-                            th:selected="${c.concertMainId == lesson.concertMainId}"></option>
+                                       ? c.concertId + '  ' + c.concertName + '（' + c.orchId + '）'
+                                       : c.concertId}"
+                            th:selected="${c.concertId == lesson.concertId}"></option>
                 </select>
                 <div class="hint">一覧にない場合は直接入力してください</div>
-                <input type="text" id="concertMainIdManual" placeholder="直接入力（例: 224081YP01）"
+                <input type="text" id="concertIdManual" placeholder="直接入力（例: 224081YP01）"
                        style="margin-top:6px; display:none;"
-                       oninput="document.getElementById('concertMainId').value=this.value">
+                       oninput="document.getElementById('concertId').value=this.value">
                 <a href="#" style="font-size:11px;" onclick="toggleManual(event)">手動入力モードに切替</a>
             </div>
             <div class="form-group" style="max-width: 120px;">
@@ -127,7 +127,7 @@
 
 <script th:inline="javascript">
     window.addEventListener('DOMContentLoaded', () => {
-        const sel = document.getElementById('concertMainId');
+        const sel = document.getElementById('concertId');
         if (sel && sel.value) {
             // 選択中の演奏会に合わせてオーケストラフィルタを初期化
             const selectedOpt = sel.querySelector('option[value="' + sel.value + '"]');
@@ -140,7 +140,7 @@
     });
 
     function filterConcerts(orchId, keepValue) {
-        const concertSel = document.getElementById('concertMainId');
+        const concertSel = document.getElementById('concertId');
         const currentVal = keepValue !== undefined ? keepValue : concertSel.value;
         let stillVisible = !currentVal;
         concertSel.querySelectorAll('option[data-orch-id]').forEach(opt => {
@@ -156,12 +156,12 @@
         }
     }
 
-    function updateBranchHint(concertMainId) {
-        if (!concertMainId) {
+    function updateBranchHint(concertId) {
+        if (!concertId) {
             document.getElementById('branchHint').textContent = '';
             return;
         }
-        fetch('/lesson/maxBranch?concertMainId=' + encodeURIComponent(concertMainId))
+        fetch('/lesson/maxBranch?concertId=' + encodeURIComponent(concertId))
             .then(r => r.json())
             .then(data => {
                 const hint = document.getElementById('branchHint');
@@ -176,8 +176,8 @@
 
     function toggleManual(e) {
         e.preventDefault();
-        const manual = document.getElementById('concertMainIdManual');
-        const sel    = document.getElementById('concertMainId');
+        const manual = document.getElementById('concertIdManual');
+        const sel    = document.getElementById('concertId');
         if (manual.style.display === 'none') {
             manual.style.display = 'block';
             sel.style.display    = 'none';

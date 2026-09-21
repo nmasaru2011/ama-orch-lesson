@@ -25,8 +25,6 @@ public interface ConcertDataRepository extends JpaRepository<ConcertData, String
 
     List<ConcertData> findByOrchIdOrderByConcertDateDesc(String orchId);
 
-    java.util.Optional<ConcertData> findFirstByConcertMainIdOrderByConcertDateDesc(String concertMainId);
-
     @Query("SELECT c FROM ConcertData c WHERE c.concertSubId = '0' ORDER BY c.concertDate DESC")
     List<ConcertData> findMainConcerts();
 

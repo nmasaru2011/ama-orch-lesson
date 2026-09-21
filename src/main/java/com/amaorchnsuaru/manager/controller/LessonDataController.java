@@ -57,13 +57,13 @@ public class LessonDataController {
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page,
-                       @RequestParam(required = false) String concertMainId,
+                       @RequestParam(required = false) String concertId,
                        @RequestParam(required = false) String orchId,
                        @RequestParam(required = false) Integer year,
                        @RequestParam(required = false) String future,
                        Model model) {
 
-        String concertFilter = nullIfBlank(concertMainId);
+        String concertFilter = nullIfBlank(concertId);
         String orchFilter    = nullIfBlank(orchId);
         String futureFilter  = nullIfBlank(future);
 
@@ -71,25 +71,25 @@ public class LessonDataController {
                 concertFilter, orchFilter, year, futureFilter,
                 PageRequest.of(page, PAGE_SIZE));
 
-        // concert_main_id → 演奏会名マップ（表示用）
+        // concert_id → 演奏会名マップ（表示用）
         Map<String, String> concertNameMap = lessonPage.getContent().stream()
-                .map(LessonData::getConcertMainId)
+                .map(LessonData::getConcertId)
                 .distinct()
                 .collect(Collectors.toMap(
                         id -> id,
-                        id -> concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(id)
+                        id -> concertRepo.findById(id)
                                 .map(c -> c.getConcertName() != null ? c.getConcertName() : id)
                                 .orElse(id),
                         (a, b) -> a,
                         LinkedHashMap::new));
 
-        // concert_main_id → orch_id マップ（表示用）
+        // concert_id → orch_id マップ（表示用）
         Map<String, String> concertOrchMap = lessonPage.getContent().stream()
-                .map(LessonData::getConcertMainId)
+                .map(LessonData::getConcertId)
                 .distinct()
                 .collect(Collectors.toMap(
                         id -> id,
-                        id -> concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(id)
+                        id -> concertRepo.findById(id)
                                 .map(ConcertData::getOrchId)
                                 .orElse(""),
                         (a, b) -> a,
@@ -101,7 +101,7 @@ public class LessonDataController {
         model.addAttribute("orchNameMap",           buildOrchNameMap());
         model.addAttribute("orchList",              orchRepo.findAllByOrderByOrchIdAsc());
         model.addAttribute("mainConcertList",       concertRepo.findMainConcertsFrom(fromDateStr()));
-        model.addAttribute("selectedConcertMainId", concertFilter);
+        model.addAttribute("selectedConcertId", concertFilter);
         model.addAttribute("selectedOrchId",        orchFilter);
         model.addAttribute("selectedYear",          year);
         model.addAttribute("selectedFuture",        futureFilter);
@@ -109,11 +109,11 @@ public class LessonDataController {
     }
 
     @GetMapping("/new")
-    public String newForm(@RequestParam(required = false) String concertMainId, Model model) {
+    public String newForm(@RequestParam(required = false) String concertId, Model model) {
         LessonData lesson = new LessonData();
-        if (concertMainId != null && !concertMainId.isBlank()) {
-            lesson.setConcertMainId(concertMainId);
-            Integer maxBranch = lessonRepo.findMaxBranchNo(concertMainId);
+        if (concertId != null && !concertId.isBlank()) {
+            lesson.setConcertId(concertId);
+            Integer maxBranch = lessonRepo.findMaxBranchNo(concertId);
             lesson.setBranchNo(maxBranch != null ? maxBranch + 1 : 1);
         }
         model.addAttribute("lesson",          lesson);
@@ -129,8 +129,8 @@ public class LessonDataController {
         sanitize(lesson);
         lessonRepo.save(lesson);
         ra.addFlashAttribute("successMsg",
-                lesson.getLessonDate() + " (" + lesson.getConcertMainId() + " #" + lesson.getBranchNo() + ") を登録しました。");
-        ra.addAttribute("concertMainId", lesson.getConcertMainId());
+                lesson.getLessonDate() + " (" + lesson.getConcertId() + " #" + lesson.getBranchNo() + ") を登録しました。");
+        ra.addAttribute("concertId", lesson.getConcertId());
         return "redirect:/lesson";
     }
 
@@ -141,9 +141,9 @@ public class LessonDataController {
 
         List<ConcertData> concertList = new ArrayList<>(concertRepo.findMainConcertsFrom(fromDateStr()));
         // 編集中レッスンの演奏会が期間外でも選択肢に残す
-        String currentId = lesson.getConcertMainId();
-        if (currentId != null && concertList.stream().noneMatch(c -> c.getConcertMainId().equals(currentId))) {
-            concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(currentId)
+        String currentId = lesson.getConcertId();
+        if (currentId != null && concertList.stream().noneMatch(c -> c.getConcertId().equals(currentId))) {
+            concertRepo.findById(currentId)
                     .ifPresent(c -> concertList.add(0, c));
         }
 
@@ -163,27 +163,27 @@ public class LessonDataController {
         sanitize(lesson);
         lessonRepo.save(lesson);
         ra.addFlashAttribute("successMsg",
-                lesson.getLessonDate() + " (" + lesson.getConcertMainId() + " #" + lesson.getBranchNo() + ") を更新しました。");
-        ra.addAttribute("concertMainId", lesson.getConcertMainId());
+                lesson.getLessonDate() + " (" + lesson.getConcertId() + " #" + lesson.getBranchNo() + ") を更新しました。");
+        ra.addAttribute("concertId", lesson.getConcertId());
         return "redirect:/lesson";
     }
 
     @GetMapping("/maxBranch")
     @ResponseBody
-    public Map<String, Object> maxBranch(@RequestParam String concertMainId) {
-        Integer max = lessonRepo.findMaxBranchNo(concertMainId);
+    public Map<String, Object> maxBranch(@RequestParam String concertId) {
+        Integer max = lessonRepo.findMaxBranchNo(concertId);
         return Map.of("max", max != null ? max : 0);
     }
 
     @GetMapping("/export/text")
     @ResponseBody
     public ResponseEntity<String> exportText(
-            @RequestParam(required = false) String concertMainId,
+            @RequestParam(required = false) String concertId,
             @RequestParam(required = false) String orchId,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String future) {
 
-        String concertFilter = nullIfBlank(concertMainId);
+        String concertFilter = nullIfBlank(concertId);
         String orchFilter    = nullIfBlank(orchId);
         String futureFilter  = nullIfBlank(future);
 
@@ -193,7 +193,7 @@ public class LessonDataController {
         StringBuilder sb = new StringBuilder();
 
         if (concertFilter != null) {
-            String concertName = concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(concertFilter)
+            String concertName = concertRepo.findById(concertFilter)
                     .map(c -> c.getConcertName() != null ? c.getConcertName() : concertFilter)
                     .orElse(concertFilter);
             sb.append("【").append(concertName).append("】練習予定\n\n");
@@ -205,10 +205,10 @@ public class LessonDataController {
             sb.append("練習予定一覧\n\n");
             String currentId = null;
             for (LessonData lesson : lessons) {
-                if (!lesson.getConcertMainId().equals(currentId)) {
-                    currentId = lesson.getConcertMainId();
+                if (!lesson.getConcertId().equals(currentId)) {
+                    currentId = lesson.getConcertId();
                     final String capturedId = currentId;
-                    String name = concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(capturedId)
+                    String name = concertRepo.findById(capturedId)
                             .map(c -> c.getConcertName() != null ? c.getConcertName() : capturedId)
                             .orElse(capturedId);
                     if (sb.length() > "練習予定一覧\n\n".length()) sb.append("\n");
@@ -263,18 +263,18 @@ public class LessonDataController {
     }
 
     @GetMapping("/export/ics")
-    public ResponseEntity<byte[]> exportIcs(@RequestParam(required = false) String concertMainId) {
-        if (concertMainId == null || concertMainId.isBlank()) {
+    public ResponseEntity<byte[]> exportIcs(@RequestParam(required = false) String concertId) {
+        if (concertId == null || concertId.isBlank()) {
             byte[] msg = "演奏会を選択してからエクスポートしてください。".getBytes(StandardCharsets.UTF_8);
             return ResponseEntity.badRequest()
                     .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
                     .body(msg);
         }
 
-        List<LessonData> lessons = lessonRepo.findByConcertMainIdOrderByBranchNoAsc(concertMainId);
-        String concertName = concertRepo.findFirstByConcertMainIdOrderByConcertDateDesc(concertMainId)
-                .map(c -> c.getConcertName() != null ? c.getConcertName() : concertMainId)
-                .orElse(concertMainId);
+        List<LessonData> lessons = lessonRepo.findByConcertIdOrderByBranchNoAsc(concertId);
+        String concertName = concertRepo.findById(concertId)
+                .map(c -> c.getConcertName() != null ? c.getConcertName() : concertId)
+                .orElse(concertId);
 
         DateTimeFormatter icsDate     = DateTimeFormatter.ofPattern("yyyyMMdd");
         DateTimeFormatter icsDateTime = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
@@ -317,7 +317,7 @@ public class LessonDataController {
         sb.append("END:VCALENDAR\r\n");
 
         byte[] icsBytes = sb.toString().getBytes(StandardCharsets.UTF_8);
-        String safeId = concertMainId.replaceAll("[^A-Za-z0-9_-]", "_");
+        String safeId = concertId.replaceAll("[^A-Za-z0-9_-]", "_");
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "text/calendar; charset=UTF-8")
@@ -339,13 +339,13 @@ public class LessonDataController {
     public String delete(@PathVariable Long id, RedirectAttributes ra) {
         final String[] holder = {null};
         lessonRepo.findById(id).ifPresent(l -> {
-            holder[0] = l.getConcertMainId();
+            holder[0] = l.getConcertId();
             lessonRepo.delete(l);
             ra.addFlashAttribute("successMsg",
-                    l.getLessonDate() + " (" + l.getConcertMainId() + " #" + l.getBranchNo() + ") を削除しました。");
+                    l.getLessonDate() + " (" + l.getConcertId() + " #" + l.getBranchNo() + ") を削除しました。");
         });
         if (holder[0] != null) {
-            ra.addAttribute("concertMainId", holder[0]);
+            ra.addAttribute("concertId", holder[0]);
         }
         return "redirect:/lesson";
     }

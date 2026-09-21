@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "include_keyword")
+@Table(name = "rehea_analysis_include_keyword_mst")
 public class IncludeKeyword extends AuditableEntity {
 
 	@Id

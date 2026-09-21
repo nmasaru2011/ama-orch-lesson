@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "correction")
+@Table(name = "rehea_analysis_correction_mst")
 public class Correction extends AuditableEntity {
 
 	@Id

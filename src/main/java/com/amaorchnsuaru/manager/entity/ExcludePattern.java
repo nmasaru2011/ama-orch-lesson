@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "exclude_pattern")
+@Table(name = "rehea_analysis_exclude_pattern_mst")
 public class ExcludePattern extends AuditableEntity {
 
 	@Id

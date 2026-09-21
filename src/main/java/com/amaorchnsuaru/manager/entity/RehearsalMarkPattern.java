@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "rehearsal_mark_pattern")
+@Table(name = "rehea_analysis_mark_pattern_mst")
 public class RehearsalMarkPattern extends AuditableEntity {
 
 	@Id

@@ -16,15 +16,15 @@ import java.time.LocalDateTime;
 
 @Entity
 @SQLRestriction("delete_datetime IS NULL")
-@Table(name = "lesson_data")
+@Table(name = "concert_lesson")
 public class LessonData extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "concert_main_id", nullable = false, length = 12)
-    private String concertMainId;
+    @Column(name = "concert_id", nullable = false, length = 12)
+    private String concertId;
 
     @Column(name = "branch_no", nullable = false)
     private Integer branchNo;
@@ -54,8 +54,8 @@ public class LessonData extends AuditableEntity {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getConcertMainId() { return concertMainId; }
-    public void setConcertMainId(String concertMainId) { this.concertMainId = concertMainId; }
+    public String getConcertId() { return concertId; }
+    public void setConcertId(String concertId) { this.concertId = concertId; }
 
     public Integer getBranchNo() { return branchNo; }
     public void setBranchNo(Integer branchNo) { this.branchNo = branchNo; }

@@ -70,43 +70,43 @@
 
         <ul class="menu-list">
             <li>
-                <a href="/rehearsal" class="menu-link">
+                <a href="/web/rehearsal" class="menu-link">
                     Youtubeオケ練習録音文字起こし
                     <span class="description">YouTubeの字幕（自動取得またはSRTファイル）を分析して、練習中の指摘内容を抽出・整理します</span>
                 </a>
             </li>
             <li sec:authorize="hasRole('ADMIN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-                <a href="/person" class="menu-link">
+                <a href="/web/person" class="menu-link">
                     人物マスタ管理
                     <span class="description">人物データの一覧表示・検索・新規登録・編集・削除（CRUD）</span>
                 </a>
             </li>
             <li>
-                <a href="/concert" class="menu-link">
+                <a href="/web/concert" class="menu-link">
                     演奏会データ管理
                     <span class="description">演奏会の一覧表示・新規登録・編集・削除（書き込みは管理者のみ）</span>
                 </a>
             </li>
             <li>
-                <a href="/layout" class="menu-link">
+                <a href="/web/layout" class="menu-link">
                     舞台配置エディタ
                     <span class="description">演奏会の曲ごとに、指揮者・パート・プルト（表／裏）の立ち位置と向きを舞台図の上で編集します</span>
                 </a>
             </li>
             <li>
-                <a href="/lesson" class="menu-link">
+                <a href="/web/lesson" class="menu-link">
                     練習データ管理
                     <span class="description">練習日程・場所・内容の一覧表示・新規登録・編集・削除（演奏会・オーケストラ・年・時期で絞り込み）</span>
                 </a>
             </li>
             <li>
-                <a href="/orch" class="menu-link">
+                <a href="/web/orch" class="menu-link">
                     オーケストラ団体マスタ管理
                     <span class="description">オーケストラ団体の一覧表示・新規登録・編集・削除（CRUD）</span>
                 </a>
             </li>
             <li>
-                <a href="/license" class="menu-link">
+                <a href="/web/license" class="menu-link">
                     使用OSSライセンス情報
                     <span class="description">本アプリケーションで使用しているオープンソースソフトウェアのライセンス一覧</span>
                 </a>

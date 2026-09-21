@@ -22,7 +22,7 @@ import com.amaorchnsuaru.manager.repository.CategoryRepository;
 import com.amaorchnsuaru.manager.repository.PersonRepository;
 
 @Controller
-@RequestMapping("/person")
+@RequestMapping("/web/person")
 public class PersonController {
 
     private static final int PAGE_SIZE = 30;
@@ -44,10 +44,8 @@ public class PersonController {
     }
 
     @GetMapping
-    public String list(
-            @RequestParam(defaultValue = "") String kw,
-            @RequestParam(defaultValue = "0") int page,
-            Model model) {
+    public String list(@RequestParam(defaultValue = "") String kw,
+            @RequestParam(defaultValue = "0") int page, Model model) {
 
         Pageable pageable = PageRequest.of(page, PAGE_SIZE);
         Page<Person> personPage = kw.isBlank()
@@ -69,38 +67,39 @@ public class PersonController {
     @PostMapping("/new")
     @Transactional
     public String create(@ModelAttribute Person person,
-                         @RequestParam(defaultValue = "false") boolean confirmDuplicate,
-                         Model model, RedirectAttributes ra) {
+            @RequestParam(defaultValue = "false") boolean confirmDuplicate, Model model,
+            RedirectAttributes ra) {
         if (!confirmDuplicate
                 && repo.existsByLastNameAndFirstName(person.getLastName(), person.getFirstName())) {
             // 入力値を保持したまま再表示し、警告を出す（再送信で登録可能）
             model.addAttribute("isNew", true);
             model.addAttribute("duplicateWarning", true);
-            model.addAttribute("warnMsg", "同姓同名の人物が既に登録されています（" + person.getFullName()
-                    + "）。別人であれば、もう一度「登録する」を押してください。");
+            model.addAttribute("warnMsg",
+                    "同姓同名の人物が既に登録されています（" + person.getFullName() + "）。別人であれば、もう一度「登録する」を押してください。");
             return "person/form";
         }
         person.setPersonId(repo.findMaxPersonId() + 1);
         repo.save(person);
         ra.addFlashAttribute("successMsg", person.getFullName() + " を登録しました。");
-        return "redirect:/person";
+        return "redirect:/web/person";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        Person person = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("不正なID: " + id));
+        Person person =
+                repo.findById(id).orElseThrow(() -> new IllegalArgumentException("不正なID: " + id));
         model.addAttribute("person", person);
         model.addAttribute("isNew", false);
         return "person/form";
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @ModelAttribute Person person, RedirectAttributes ra) {
+    public String update(@PathVariable Long id, @ModelAttribute Person person,
+            RedirectAttributes ra) {
         person.setPersonId(id);
         repo.save(person);
         ra.addFlashAttribute("successMsg", person.getFullName() + " を更新しました。");
-        return "redirect:/person";
+        return "redirect:/web/person";
     }
 
     @PostMapping("/{id}/delete")
@@ -109,6 +108,6 @@ public class PersonController {
             repo.delete(p);
             ra.addFlashAttribute("successMsg", p.getFullName() + " を削除しました。");
         });
-        return "redirect:/person";
+        return "redirect:/web/person";
     }
 }

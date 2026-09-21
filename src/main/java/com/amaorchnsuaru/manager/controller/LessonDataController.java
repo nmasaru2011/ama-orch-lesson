@@ -34,7 +34,7 @@ import com.amaorchnsuaru.manager.repository.LessonDataRepository;
 import com.amaorchnsuaru.manager.repository.OrchDataRepository;
 
 @Controller
-@RequestMapping("/lesson")
+@RequestMapping("/web/lesson")
 public class LessonDataController {
 
     private static final int PAGE_SIZE = 30;
@@ -47,64 +47,51 @@ public class LessonDataController {
     private final ConcertDataRepository concertRepo;
     private final OrchDataRepository orchRepo;
 
-    public LessonDataController(LessonDataRepository lessonRepo,
-                                ConcertDataRepository concertRepo,
-                                OrchDataRepository orchRepo) {
-        this.lessonRepo  = lessonRepo;
+    public LessonDataController(LessonDataRepository lessonRepo, ConcertDataRepository concertRepo,
+            OrchDataRepository orchRepo) {
+        this.lessonRepo = lessonRepo;
         this.concertRepo = concertRepo;
-        this.orchRepo    = orchRepo;
+        this.orchRepo = orchRepo;
     }
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page,
-                       @RequestParam(required = false) String concertId,
-                       @RequestParam(required = false) String orchId,
-                       @RequestParam(required = false) Integer year,
-                       @RequestParam(required = false) String future,
-                       Model model) {
+            @RequestParam(required = false) String concertId,
+            @RequestParam(required = false) String orchId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String future, Model model) {
 
         String concertFilter = nullIfBlank(concertId);
-        String orchFilter    = nullIfBlank(orchId);
-        String futureFilter  = nullIfBlank(future);
+        String orchFilter = nullIfBlank(orchId);
+        String futureFilter = nullIfBlank(future);
 
-        Page<LessonData> lessonPage = lessonRepo.findByFilters(
-                concertFilter, orchFilter, year, futureFilter,
-                PageRequest.of(page, PAGE_SIZE));
+        Page<LessonData> lessonPage = lessonRepo.findByFilters(concertFilter, orchFilter, year,
+                futureFilter, PageRequest.of(page, PAGE_SIZE));
 
         // concert_id → 演奏会名マップ（表示用）
         Map<String, String> concertNameMap = lessonPage.getContent().stream()
-                .map(LessonData::getConcertId)
-                .distinct()
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> concertRepo.findById(id)
-                                .map(c -> c.getConcertName() != null ? c.getConcertName() : id)
-                                .orElse(id),
-                        (a, b) -> a,
-                        LinkedHashMap::new));
+                .map(LessonData::getConcertId).distinct()
+                .collect(Collectors.toMap(id -> id, id -> concertRepo.findById(id)
+                        .map(c -> c.getConcertName() != null ? c.getConcertName() : id).orElse(id),
+                        (a, b) -> a, LinkedHashMap::new));
 
         // concert_id → orch_id マップ（表示用）
         Map<String, String> concertOrchMap = lessonPage.getContent().stream()
-                .map(LessonData::getConcertId)
-                .distinct()
-                .collect(Collectors.toMap(
-                        id -> id,
-                        id -> concertRepo.findById(id)
-                                .map(ConcertData::getOrchId)
-                                .orElse(""),
-                        (a, b) -> a,
-                        LinkedHashMap::new));
+                .map(LessonData::getConcertId).distinct()
+                .collect(Collectors.toMap(id -> id,
+                        id -> concertRepo.findById(id).map(ConcertData::getOrchId).orElse(""),
+                        (a, b) -> a, LinkedHashMap::new));
 
-        model.addAttribute("lessonPage",           lessonPage);
-        model.addAttribute("concertNameMap",        concertNameMap);
-        model.addAttribute("concertOrchMap",        concertOrchMap);
-        model.addAttribute("orchNameMap",           buildOrchNameMap());
-        model.addAttribute("orchList",              orchRepo.findAllByOrderByOrchIdAsc());
-        model.addAttribute("mainConcertList",       concertRepo.findMainConcertsFrom(fromDateStr()));
+        model.addAttribute("lessonPage", lessonPage);
+        model.addAttribute("concertNameMap", concertNameMap);
+        model.addAttribute("concertOrchMap", concertOrchMap);
+        model.addAttribute("orchNameMap", buildOrchNameMap());
+        model.addAttribute("orchList", orchRepo.findAllByOrderByOrchIdAsc());
+        model.addAttribute("mainConcertList", concertRepo.findMainConcertsFrom(fromDateStr()));
         model.addAttribute("selectedConcertId", concertFilter);
-        model.addAttribute("selectedOrchId",        orchFilter);
-        model.addAttribute("selectedYear",          year);
-        model.addAttribute("selectedFuture",        futureFilter);
+        model.addAttribute("selectedOrchId", orchFilter);
+        model.addAttribute("selectedYear", year);
+        model.addAttribute("selectedFuture", futureFilter);
         return "lesson/list";
     }
 
@@ -116,10 +103,10 @@ public class LessonDataController {
             Integer maxBranch = lessonRepo.findMaxBranchNo(concertId);
             lesson.setBranchNo(maxBranch != null ? maxBranch + 1 : 1);
         }
-        model.addAttribute("lesson",          lesson);
+        model.addAttribute("lesson", lesson);
         model.addAttribute("mainConcertList", concertRepo.findMainConcertsFrom(fromDateStr()));
-        model.addAttribute("orchList",        orchRepo.findAllByOrderByOrchIdAsc());
-        model.addAttribute("isNew",           true);
+        model.addAttribute("orchList", orchRepo.findAllByOrderByOrchIdAsc());
+        model.addAttribute("isNew", true);
         return "lesson/form";
     }
 
@@ -128,10 +115,10 @@ public class LessonDataController {
         fillTimestamps(lesson);
         sanitize(lesson);
         lessonRepo.save(lesson);
-        ra.addFlashAttribute("successMsg",
-                lesson.getLessonDate() + " (" + lesson.getConcertId() + " #" + lesson.getBranchNo() + ") を登録しました。");
+        ra.addFlashAttribute("successMsg", lesson.getLessonDate() + " (" + lesson.getConcertId()
+                + " #" + lesson.getBranchNo() + ") を登録しました。");
         ra.addAttribute("concertId", lesson.getConcertId());
-        return "redirect:/lesson";
+        return "redirect:/web/lesson";
     }
 
     @GetMapping("/{id}/edit")
@@ -139,33 +126,33 @@ public class LessonDataController {
         LessonData lesson = lessonRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("不正なID: " + id));
 
-        List<ConcertData> concertList = new ArrayList<>(concertRepo.findMainConcertsFrom(fromDateStr()));
+        List<ConcertData> concertList =
+                new ArrayList<>(concertRepo.findMainConcertsFrom(fromDateStr()));
         // 編集中レッスンの演奏会が期間外でも選択肢に残す
         String currentId = lesson.getConcertId();
-        if (currentId != null && concertList.stream().noneMatch(c -> c.getConcertId().equals(currentId))) {
-            concertRepo.findById(currentId)
-                    .ifPresent(c -> concertList.add(0, c));
+        if (currentId != null
+                && concertList.stream().noneMatch(c -> c.getConcertId().equals(currentId))) {
+            concertRepo.findById(currentId).ifPresent(c -> concertList.add(0, c));
         }
 
-        model.addAttribute("lesson",          lesson);
+        model.addAttribute("lesson", lesson);
         model.addAttribute("mainConcertList", concertList);
-        model.addAttribute("orchList",        orchRepo.findAllByOrderByOrchIdAsc());
-        model.addAttribute("isNew",           false);
+        model.addAttribute("orchList", orchRepo.findAllByOrderByOrchIdAsc());
+        model.addAttribute("isNew", false);
         return "lesson/form";
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id,
-                         @ModelAttribute LessonData lesson,
-                         RedirectAttributes ra) {
+    public String update(@PathVariable Long id, @ModelAttribute LessonData lesson,
+            RedirectAttributes ra) {
         lesson.setId(id);
         fillTimestamps(lesson);
         sanitize(lesson);
         lessonRepo.save(lesson);
-        ra.addFlashAttribute("successMsg",
-                lesson.getLessonDate() + " (" + lesson.getConcertId() + " #" + lesson.getBranchNo() + ") を更新しました。");
+        ra.addFlashAttribute("successMsg", lesson.getLessonDate() + " (" + lesson.getConcertId()
+                + " #" + lesson.getBranchNo() + ") を更新しました。");
         ra.addAttribute("concertId", lesson.getConcertId());
-        return "redirect:/lesson";
+        return "redirect:/web/lesson";
     }
 
     @GetMapping("/maxBranch")
@@ -177,17 +164,17 @@ public class LessonDataController {
 
     @GetMapping("/export/text")
     @ResponseBody
-    public ResponseEntity<String> exportText(
-            @RequestParam(required = false) String concertId,
+    public ResponseEntity<String> exportText(@RequestParam(required = false) String concertId,
             @RequestParam(required = false) String orchId,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String future) {
 
         String concertFilter = nullIfBlank(concertId);
-        String orchFilter    = nullIfBlank(orchId);
-        String futureFilter  = nullIfBlank(future);
+        String orchFilter = nullIfBlank(orchId);
+        String futureFilter = nullIfBlank(future);
 
-        List<LessonData> lessons = lessonRepo.findAllByFilters(concertFilter, orchFilter, year, futureFilter);
+        List<LessonData> lessons =
+                lessonRepo.findAllByFilters(concertFilter, orchFilter, year, futureFilter);
 
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("M/d");
         StringBuilder sb = new StringBuilder();
@@ -211,25 +198,25 @@ public class LessonDataController {
                     String name = concertRepo.findById(capturedId)
                             .map(c -> c.getConcertName() != null ? c.getConcertName() : capturedId)
                             .orElse(capturedId);
-                    if (sb.length() > "練習予定一覧\n\n".length()) sb.append("\n");
+                    if (sb.length() > "練習予定一覧\n\n".length())
+                        sb.append("\n");
                     sb.append("■ ").append(name).append("\n");
                 }
                 appendLessonLine(sb, lesson, dateFmt);
             }
         }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
                 .body(sb.toString().trim());
     }
 
     private void appendLessonLine(StringBuilder sb, LessonData lesson, DateTimeFormatter dateFmt) {
-        String dow  = japaneseDay(lesson.getLessonDate().getDayOfWeek());
+        String dow = japaneseDay(lesson.getLessonDate().getDayOfWeek());
         String time = buildTimeStr(lesson);
         sb.append("#").append(lesson.getBranchNo()).append("  ")
-          .append(lesson.getLessonDate().format(dateFmt))
-          .append("(").append(dow).append(")");
-        if (!time.isEmpty()) sb.append(" ").append(time);
+                .append(lesson.getLessonDate().format(dateFmt)).append("(").append(dow).append(")");
+        if (!time.isEmpty())
+            sb.append(" ").append(time);
         if (lesson.getPlaceName() != null && !lesson.getPlaceName().isBlank()) {
             sb.append("  ").append(lesson.getPlaceName());
         }
@@ -241,19 +228,19 @@ public class LessonDataController {
 
     private String japaneseDay(java.time.DayOfWeek dow) {
         return switch (dow) {
-            case MONDAY    -> "月";
-            case TUESDAY   -> "火";
+            case MONDAY -> "月";
+            case TUESDAY -> "火";
             case WEDNESDAY -> "水";
-            case THURSDAY  -> "木";
-            case FRIDAY    -> "金";
-            case SATURDAY  -> "土";
-            case SUNDAY    -> "日";
+            case THURSDAY -> "木";
+            case FRIDAY -> "金";
+            case SATURDAY -> "土";
+            case SUNDAY -> "日";
         };
     }
 
     private String buildTimeStr(LessonData lesson) {
         String start = lesson.getLessonStartTimeStr();
-        String end   = lesson.getLessonEndTimeStr();
+        String end = lesson.getLessonEndTimeStr();
         if (start != null && !start.isBlank() && end != null && !end.isBlank()) {
             return start + "〜" + end;
         } else if (start != null && !start.isBlank()) {
@@ -267,8 +254,7 @@ public class LessonDataController {
         if (concertId == null || concertId.isBlank()) {
             byte[] msg = "演奏会を選択してからエクスポートしてください。".getBytes(StandardCharsets.UTF_8);
             return ResponseEntity.badRequest()
-                    .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
-                    .body(msg);
+                    .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8").body(msg);
         }
 
         List<LessonData> lessons = lessonRepo.findByConcertIdOrderByBranchNoAsc(concertId);
@@ -276,7 +262,7 @@ public class LessonDataController {
                 .map(c -> c.getConcertName() != null ? c.getConcertName() : concertId)
                 .orElse(concertId);
 
-        DateTimeFormatter icsDate     = DateTimeFormatter.ofPattern("yyyyMMdd");
+        DateTimeFormatter icsDate = DateTimeFormatter.ofPattern("yyyyMMdd");
         DateTimeFormatter icsDateTime = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
         String dtstamp = LocalDateTime.now().format(icsDateTime);
 
@@ -294,17 +280,20 @@ public class LessonDataController {
             sb.append("DTSTAMP:").append(dtstamp).append("\r\n");
 
             if (lesson.getLessonStartTime() != null) {
-                sb.append("DTSTART:").append(lesson.getLessonStartTime().format(icsDateTime)).append("\r\n");
-                LocalDateTime end = lesson.getLessonEndTime() != null
-                        ? lesson.getLessonEndTime()
+                sb.append("DTSTART:").append(lesson.getLessonStartTime().format(icsDateTime))
+                        .append("\r\n");
+                LocalDateTime end = lesson.getLessonEndTime() != null ? lesson.getLessonEndTime()
                         : lesson.getLessonStartTime().plusHours(2);
                 sb.append("DTEND:").append(end.format(icsDateTime)).append("\r\n");
             } else {
-                sb.append("DTSTART;VALUE=DATE:").append(lesson.getLessonDate().format(icsDate)).append("\r\n");
-                sb.append("DTEND;VALUE=DATE:").append(lesson.getLessonDate().plusDays(1).format(icsDate)).append("\r\n");
+                sb.append("DTSTART;VALUE=DATE:").append(lesson.getLessonDate().format(icsDate))
+                        .append("\r\n");
+                sb.append("DTEND;VALUE=DATE:")
+                        .append(lesson.getLessonDate().plusDays(1).format(icsDate)).append("\r\n");
             }
 
-            sb.append("SUMMARY:").append(icsEscape(concertName + " 練習 #" + lesson.getBranchNo())).append("\r\n");
+            sb.append("SUMMARY:").append(icsEscape(concertName + " 練習 #" + lesson.getBranchNo()))
+                    .append("\r\n");
             if (lesson.getPlaceName() != null && !lesson.getPlaceName().isBlank()) {
                 sb.append("LOCATION:").append(icsEscape(lesson.getPlaceName())).append("\r\n");
             }
@@ -319,20 +308,17 @@ public class LessonDataController {
         byte[] icsBytes = sb.toString().getBytes(StandardCharsets.UTF_8);
         String safeId = concertId.replaceAll("[^A-Za-z0-9_-]", "_");
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, "text/calendar; charset=UTF-8")
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"lesson_" + safeId + ".ics\"")
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "text/calendar; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"lesson_" + safeId + ".ics\"")
                 .body(icsBytes);
     }
 
     private String icsEscape(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\")
-                    .replace(";", "\\;")
-                    .replace(",", "\\,")
-                    .replace("\r\n", "\\n")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\n");
+        if (value == null)
+            return "";
+        return value.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+                .replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n");
     }
 
     @PostMapping("/{id}/delete")
@@ -341,18 +327,20 @@ public class LessonDataController {
         lessonRepo.findById(id).ifPresent(l -> {
             holder[0] = l.getConcertId();
             lessonRepo.delete(l);
-            ra.addFlashAttribute("successMsg",
-                    l.getLessonDate() + " (" + l.getConcertId() + " #" + l.getBranchNo() + ") を削除しました。");
+            ra.addFlashAttribute("successMsg", l.getLessonDate() + " (" + l.getConcertId() + " #"
+                    + l.getBranchNo() + ") を削除しました。");
         });
         if (holder[0] != null) {
             ra.addAttribute("concertId", holder[0]);
         }
-        return "redirect:/lesson";
+        return "redirect:/web/lesson";
     }
 
     private void fillTimestamps(LessonData lesson) {
-        if (lesson.getLessonDate() == null) return;
-        lesson.setLessonStartTime(toDateTime(lesson.getLessonDate(), lesson.getLessonStartTimeStr()));
+        if (lesson.getLessonDate() == null)
+            return;
+        lesson.setLessonStartTime(
+                toDateTime(lesson.getLessonDate(), lesson.getLessonStartTimeStr()));
         lesson.setLessonEndTime(toDateTime(lesson.getLessonDate(), lesson.getLessonEndTimeStr()));
     }
 
@@ -360,15 +348,19 @@ public class LessonDataController {
         if (timeStr != null && !timeStr.isBlank()) {
             try {
                 return LocalDateTime.of(date, LocalTime.parse(timeStr.trim(), TIME_FMT));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return LocalDateTime.of(date, LocalTime.MIDNIGHT);
     }
 
     private void sanitize(LessonData lesson) {
-        if (lesson.getPlaceName() == null) lesson.setPlaceName("");
-        if (lesson.getLessonStartTimeStr() == null) lesson.setLessonStartTimeStr("");
-        if (lesson.getLessonEndTimeStr()   == null) lesson.setLessonEndTimeStr("");
+        if (lesson.getPlaceName() == null)
+            lesson.setPlaceName("");
+        if (lesson.getLessonStartTimeStr() == null)
+            lesson.setLessonStartTimeStr("");
+        if (lesson.getLessonEndTimeStr() == null)
+            lesson.setLessonEndTimeStr("");
     }
 
     private String nullIfBlank(String s) {
@@ -381,11 +373,7 @@ public class LessonDataController {
     }
 
     private Map<String, String> buildOrchNameMap() {
-        return orchRepo.findAllByOrderByOrchIdAsc().stream()
-                .collect(Collectors.toMap(
-                        o -> o.getOrchId(),
-                        o -> o.getOrchName(),
-                        (a, b) -> a,
-                        LinkedHashMap::new));
+        return orchRepo.findAllByOrderByOrchIdAsc().stream().collect(Collectors
+                .toMap(o -> o.getOrchId(), o -> o.getOrchName(), (a, b) -> a, LinkedHashMap::new));
     }
 }

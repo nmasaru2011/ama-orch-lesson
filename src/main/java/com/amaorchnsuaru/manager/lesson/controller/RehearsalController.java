@@ -32,7 +32,7 @@ import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-@RequestMapping("/rehearsal")
+@RequestMapping("/web/rehearsal")
 public class RehearsalController {
 
 	@Autowired
@@ -64,42 +64,41 @@ public class RehearsalController {
 		if (file != null && !file.isEmpty()) {
 			String filename = file.getOriginalFilename();
 			if (filename == null || !filename.toLowerCase().endsWith(".srt")) {
-				redirectAttributes.addFlashAttribute("error",
-						"SRTファイル (.srt) を選択してください");
-				return "redirect:/rehearsal";
+				redirectAttributes.addFlashAttribute("error", "SRTファイル (.srt) を選択してください");
+				return "redirect:/web/rehearsal";
 			}
 		} else if (!hasUrl) {
-			redirectAttributes.addFlashAttribute("error",
-					"SRTファイルまたはYouTube URLのいずれかを指定してください");
-			return "redirect:/rehearsal";
+			redirectAttributes.addFlashAttribute("error", "SRTファイルまたはYouTube URLのいずれかを指定してください");
+			return "redirect:/web/rehearsal";
 		}
 
 		try {
 			String srtContent;
 			if (file != null && !file.isEmpty()) {
-				srtContent = new String(file.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+				srtContent =
+						new String(file.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 			} else {
 				srtContent = youTubeCaptionService.fetchCaptionAsSrt(youtubeUrl);
 			}
 
 			List<RehearsalInstruction> instructions;
 			if ("ai".equals(analysisMode)) {
-				AiProvider provider = "openai".equalsIgnoreCase(aiProvider)
-						? AiProvider.OPENAI : AiProvider.ANTHROPIC;
+				AiProvider provider = "openai".equalsIgnoreCase(aiProvider) ? AiProvider.OPENAI
+						: AiProvider.ANTHROPIC;
 				instructions = aiAnalysisService.analyzeWithAi(srtContent, provider);
 				// AI解析ではYouTubeリンクが含まれないため補完する
 				if (hasUrl) {
 					String videoId = extractVideoId(youtubeUrl);
 					for (RehearsalInstruction inst : instructions) {
 						if (inst.getYoutubeLink() == null && videoId != null) {
-							inst.setYoutubeLink("https://www.youtube.com/watch?v=" + videoId
-									+ "&t=" + inst.getTotalSeconds() + "s");
+							inst.setYoutubeLink("https://www.youtube.com/watch?v=" + videoId + "&t="
+									+ inst.getTotalSeconds() + "s");
 						}
 					}
 				}
 			} else {
-				InputStream srtInputStream = new ByteArrayInputStream(
-						srtContent.getBytes(StandardCharsets.UTF_8));
+				InputStream srtInputStream =
+						new ByteArrayInputStream(srtContent.getBytes(StandardCharsets.UTF_8));
 				instructions = rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
 			}
 
@@ -117,30 +116,30 @@ public class RehearsalController {
 
 		} catch (IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
-			return "redirect:/rehearsal";
+			return "redirect:/web/rehearsal";
 		} catch (YouTubeCaptionException e) {
-			redirectAttributes.addFlashAttribute("error",
-					"YouTube字幕の取得に失敗しました: " + e.getMessage());
-			return "redirect:/rehearsal";
+			redirectAttributes.addFlashAttribute("error", "YouTube字幕の取得に失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
 		} catch (IOException e) {
-			redirectAttributes.addFlashAttribute("error",
-					"ファイルの読み込みに失敗しました: " + e.getMessage());
-			return "redirect:/rehearsal";
+			redirectAttributes.addFlashAttribute("error", "ファイルの読み込みに失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
 		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("error",
-					"AI解析に失敗しました: " + e.getMessage());
-			return "redirect:/rehearsal";
+			redirectAttributes.addFlashAttribute("error", "AI解析に失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
 		}
 	}
 
 	private String extractVideoId(String youtubeUrl) {
-		if (youtubeUrl == null || youtubeUrl.isBlank()) return null;
-		java.util.regex.Matcher m1 = java.util.regex.Pattern
-				.compile("[?&]v=([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
-		if (m1.find()) return m1.group(1);
+		if (youtubeUrl == null || youtubeUrl.isBlank())
+			return null;
+		java.util.regex.Matcher m1 =
+				java.util.regex.Pattern.compile("[?&]v=([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
+		if (m1.find())
+			return m1.group(1);
 		java.util.regex.Matcher m2 = java.util.regex.Pattern
 				.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
-		if (m2.find()) return m2.group(1);
+		if (m2.find())
+			return m2.group(1);
 		return null;
 	}
 

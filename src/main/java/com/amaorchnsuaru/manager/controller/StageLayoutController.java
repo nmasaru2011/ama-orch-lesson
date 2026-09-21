@@ -37,46 +37,44 @@ import com.amaorchnsuaru.manager.service.StageLayoutExportService;
 import com.amaorchnsuaru.manager.service.StageLayoutService;
 
 /**
- * 舞台配置（ステージ上の人・パートの並び）の一覧と編集画面。
- * 編集画面はドラッグで座席を動かし、まとめて JSON で保存する。
+ * 舞台配置（ステージ上の人・パートの並び）の一覧と編集画面。 編集画面はドラッグで座席を動かし、まとめて JSON で保存する。
  */
 @Controller
-@RequestMapping("/layout")
+@RequestMapping("/web/layout")
 public class StageLayoutController {
 
-    private final StageLayoutRepository     layoutRepo;
+    private final StageLayoutRepository layoutRepo;
     private final StageLayoutSeatRepository seatRepo;
-    private final ConcertProgramRepository  programRepo;
-    private final ConcertDataRepository     concertRepo;
-    private final PersonRepository          personRepo;
-    private final StageLayoutService        layoutService;
-    private final StageLayoutExportService  exportService;
+    private final ConcertProgramRepository programRepo;
+    private final ConcertDataRepository concertRepo;
+    private final PersonRepository personRepo;
+    private final StageLayoutService layoutService;
+    private final StageLayoutExportService exportService;
     private final StageLayout3dExportService export3dService;
 
     public StageLayoutController(StageLayoutRepository layoutRepo,
-                                 StageLayoutSeatRepository seatRepo,
-                                 ConcertProgramRepository programRepo,
-                                 ConcertDataRepository concertRepo,
-                                 PersonRepository personRepo,
-                                 StageLayoutService layoutService,
-                                 StageLayoutExportService exportService,
-                                 StageLayout3dExportService export3dService) {
-        this.layoutRepo    = layoutRepo;
-        this.seatRepo      = seatRepo;
-        this.programRepo   = programRepo;
-        this.concertRepo   = concertRepo;
-        this.personRepo    = personRepo;
+            StageLayoutSeatRepository seatRepo, ConcertProgramRepository programRepo,
+            ConcertDataRepository concertRepo, PersonRepository personRepo,
+            StageLayoutService layoutService, StageLayoutExportService exportService,
+            StageLayout3dExportService export3dService) {
+        this.layoutRepo = layoutRepo;
+        this.seatRepo = seatRepo;
+        this.programRepo = programRepo;
+        this.concertRepo = concertRepo;
+        this.personRepo = personRepo;
         this.layoutService = layoutService;
         this.exportService = exportService;
         this.export3dService = export3dService;
     }
 
     /** 編集画面の人物プルダウン用（氏名とかなだけ持つ軽量データ） */
-    public record PersonOption(Long id, String name, String kana, String inst) {}
+    public record PersonOption(Long id, String name, String kana, String inst) {
+    }
 
     /** 一覧に出す「この配置を使っている曲」 */
-    public record LayoutUsage(String concertId, Integer programNo,
-                              String concertName, String musicTitle) {}
+    public record LayoutUsage(String concertId, Integer programNo, String concertName,
+            String musicTitle) {
+    }
 
     @GetMapping
     public String list(Model model) {
@@ -97,11 +95,10 @@ public class StageLayoutController {
 
     @PostMapping("/new")
     public String create(@RequestParam(required = false) String layoutName,
-                         @RequestParam(defaultValue = "true") boolean withTemplate,
-                         RedirectAttributes ra) {
+            @RequestParam(defaultValue = "true") boolean withTemplate, RedirectAttributes ra) {
         StageLayout layout = layoutService.create(layoutName, withTemplate);
         ra.addFlashAttribute("successMsg", layout.getLayoutName() + " を作成しました。");
-        return "redirect:/layout/" + layout.getLayoutId() + "/edit";
+        return "redirect:/web/layout/" + layout.getLayoutId() + "/edit";
     }
 
     /** 閲覧のみ（編集不可） */
@@ -121,7 +118,7 @@ public class StageLayoutController {
     @PostMapping("/{layoutId}/save")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> save(@PathVariable Long layoutId,
-                                                    @RequestBody StageLayoutService.LayoutForm form) {
+            @RequestBody StageLayoutService.LayoutForm form) {
         StageLayout layout = layoutService.save(layoutId, form);
         List<StageLayoutSeat> seats = seatRepo.findByLayoutIdOrderBySeatNoAsc(layoutId);
         Map<String, Object> body = new LinkedHashMap<>();
@@ -137,14 +134,14 @@ public class StageLayoutController {
     public String applyTemplate(@PathVariable Long layoutId, RedirectAttributes ra) {
         layoutService.resetToStandard(layoutId);
         ra.addFlashAttribute("successMsg", "標準配置で置き換えました。");
-        return "redirect:/layout/" + layoutId + "/edit";
+        return "redirect:/web/layout/" + layoutId + "/edit";
     }
 
     @PostMapping("/{layoutId}/duplicate")
     public String duplicate(@PathVariable Long layoutId, RedirectAttributes ra) {
         StageLayout copy = layoutService.duplicate(layoutId);
         ra.addFlashAttribute("successMsg", copy.getLayoutName() + " を作成しました。");
-        return "redirect:/layout/" + copy.getLayoutId() + "/edit";
+        return "redirect:/web/layout/" + copy.getLayoutId() + "/edit";
     }
 
     @PostMapping("/{layoutId}/delete")
@@ -153,7 +150,7 @@ public class StageLayoutController {
             layoutService.delete(layoutId);
             ra.addFlashAttribute("successMsg", l.getLayoutName() + " を削除しました。");
         });
-        return "redirect:/layout";
+        return "redirect:/web/layout";
     }
 
     // =========================================================
@@ -166,9 +163,8 @@ public class StageLayoutController {
         StageLayout layout = require(layoutId);
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         exportService.writePptx(layout, seatRepo.findByLayoutIdOrderBySeatNoAsc(layoutId), buf);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(
-                        "application/vnd.openxmlformats-officedocument.presentationml.presentation"))
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, attachment(layout, layoutId, "pptx"))
                 .body(buf.toByteArray());
     }
@@ -191,15 +187,13 @@ public class StageLayoutController {
         StageLayout layout = require(layoutId);
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         export3dService.write3mf(layout, seatRepo.findByLayoutIdOrderBySeatNoAsc(layoutId), buf);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("model/3mf"))
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("model/3mf"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, attachment(layout, layoutId, "3mf"))
                 .body(buf.toByteArray());
     }
 
     /**
-     * 配置名をファイル名にする。日本語が使えないブラウザ向けに ASCII の代替名も並記する
-     * （RFC 6266 / RFC 5987）。
+     * 配置名をファイル名にする。日本語が使えないブラウザ向けに ASCII の代替名も並記する （RFC 6266 / RFC 5987）。
      */
     private static String attachment(StageLayout layout, Long layoutId, String ext) {
         String name = layout.getLayoutName() == null ? "" : layout.getLayoutName();
@@ -207,8 +201,8 @@ public class StageLayoutController {
         if (safe.isEmpty()) {
             safe = "stage-layout-" + layoutId;
         }
-        String encoded = URLEncoder.encode(safe + "." + ext, StandardCharsets.UTF_8)
-                .replace("+", "%20");
+        String encoded =
+                URLEncoder.encode(safe + "." + ext, StandardCharsets.UTF_8).replace("+", "%20");
         return "attachment; filename=\"stage-layout-" + layoutId + "." + ext + "\"; "
                 + "filename*=UTF-8''" + encoded;
     }
@@ -228,32 +222,27 @@ public class StageLayoutController {
     }
 
     private List<LayoutUsage> buildUsages(Long layoutId) {
-        return programRepo.findByLayoutId(layoutId).stream()
-                .sorted((a, b) -> {
-                    int c = a.getConcertId().compareTo(b.getConcertId());
-                    return c != 0 ? c : Integer.compare(a.getProgramNo(), b.getProgramNo());
-                })
-                .map(this::toUsage)
-                .toList();
+        return programRepo.findByLayoutId(layoutId).stream().sorted((a, b) -> {
+            int c = a.getConcertId().compareTo(b.getConcertId());
+            return c != 0 ? c : Integer.compare(a.getProgramNo(), b.getProgramNo());
+        }).map(this::toUsage).toList();
     }
 
     private LayoutUsage toUsage(ConcertProgram prog) {
         String concertName = concertRepo.findById(prog.getConcertId())
-                .map(ConcertData::getConcertName)
-                .orElse(prog.getConcertId());
-        return new LayoutUsage(prog.getConcertId(), prog.getProgramNo(),
-                concertName, prog.getMusicTitleFormalJp());
+                .map(ConcertData::getConcertName).orElse(prog.getConcertId());
+        return new LayoutUsage(prog.getConcertId(), prog.getProgramNo(), concertName,
+                prog.getMusicTitleFormalJp());
     }
 
     private List<PersonOption> buildPersonOptions() {
         return personRepo.findAll().stream()
-                .map(p -> new PersonOption(
-                        p.getPersonId(),
+                .map(p -> new PersonOption(p.getPersonId(),
                         nullToEmpty(p.getLastName()) + nullToEmpty(p.getFirstName()),
-                        nullToEmpty(p.getLastNameKanaEstimate()) + nullToEmpty(p.getFirstNameKanaEstimate()),
+                        nullToEmpty(p.getLastNameKanaEstimate())
+                                + nullToEmpty(p.getFirstNameKanaEstimate()),
                         nullToEmpty(p.getMainActiveInstrument())))
-                .sorted((a, b) -> a.kana().compareTo(b.kana()))
-                .toList();
+                .sorted((a, b) -> a.kana().compareTo(b.kana())).toList();
     }
 
     private static String nullToEmpty(String s) {

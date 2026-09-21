@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/rehearsal/audio")
+@RequestMapping("/web/rehearsal/audio")
 public class AudioController {
 
     /** ダウンロード用セッションキー（RehearsalController と共有） */
@@ -45,29 +45,26 @@ public class AudioController {
     // ----------------------------------------------------------------
 
     /**
-     * POST /rehearsal/audio/analyze
-     * 音声ファイルを受け取り、Whisper で文字起こし後に解析する。
+     * POST /rehearsal/audio/analyze 音声ファイルを受け取り、Whisper で文字起こし後に解析する。
      */
     @PostMapping("/analyze")
-    public String analyzeAudio(
-            @RequestParam MultipartFile audioFile,
+    public String analyzeAudio(@RequestParam MultipartFile audioFile,
             @RequestParam(defaultValue = "standard") String analysisMode,
-            @RequestParam(defaultValue = "openai") String aiProvider,
-            Model model,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
+            @RequestParam(defaultValue = "openai") String aiProvider, Model model,
+            HttpSession session, RedirectAttributes redirectAttributes) {
 
         if (audioFile == null || audioFile.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "音声ファイルを選択してください。");
             redirectAttributes.addFlashAttribute("activeTab", "audio");
-            return "redirect:/rehearsal";
+            return "redirect:/web/rehearsal";
         }
 
         try {
             String srtText = transcriptionService.transcribeToSrt(audioFile);
             List<RehearsalInstruction> instructions = doAnalyze(srtText, analysisMode, aiProvider);
 
-            Map<String, Integer> instrumentSummary = rehearsalSrtService.countByInstrument(instructions);
+            Map<String, Integer> instrumentSummary =
+                    rehearsalSrtService.countByInstrument(instructions);
             model.addAttribute("instructions", instructions);
             model.addAttribute("instrumentSummary", instrumentSummary);
             model.addAttribute("totalCount", instructions.size());
@@ -79,11 +76,11 @@ public class AudioController {
         } catch (IllegalStateException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             redirectAttributes.addFlashAttribute("activeTab", "audio");
-            return "redirect:/rehearsal";
+            return "redirect:/web/rehearsal";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "音声解析に失敗しました: " + e.getMessage());
             redirectAttributes.addFlashAttribute("activeTab", "audio");
-            return "redirect:/rehearsal";
+            return "redirect:/web/rehearsal";
         }
     }
 
@@ -92,17 +89,14 @@ public class AudioController {
     // ----------------------------------------------------------------
 
     /**
-     * POST /rehearsal/audio/realtime-chunk
-     * ブラウザから送られてくる録音チャンクを受け取り、文字起こし・解析して
-     * セッションに蓄積する。レスポンスは JSON。
+     * POST /rehearsal/audio/realtime-chunk ブラウザから送られてくる録音チャンクを受け取り、文字起こし・解析して セッションに蓄積する。レスポンスは
+     * JSON。
      */
     @PostMapping("/realtime-chunk")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> receiveChunk(
-            @RequestParam MultipartFile chunk,
+    public ResponseEntity<Map<String, Object>> receiveChunk(@RequestParam MultipartFile chunk,
             @RequestParam(defaultValue = "standard") String analysisMode,
-            @RequestParam(defaultValue = "openai") String aiProvider,
-            HttpSession session) {
+            @RequestParam(defaultValue = "openai") String aiProvider, HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
         try {
@@ -126,8 +120,7 @@ public class AudioController {
     }
 
     /**
-     * GET /rehearsal/audio/realtime-status
-     * 蓄積中の結果を JSON で返す（ポーリング用）。
+     * GET /rehearsal/audio/realtime-status 蓄積中の結果を JSON で返す（ポーリング用）。
      */
     @GetMapping("/realtime-status")
     @ResponseBody
@@ -140,8 +133,7 @@ public class AudioController {
     }
 
     /**
-     * POST /rehearsal/audio/realtime-reset
-     * リアルタイム蓄積データをクリアする。
+     * POST /rehearsal/audio/realtime-reset リアルタイム蓄積データをクリアする。
      */
     @PostMapping("/realtime-reset")
     @ResponseBody
@@ -153,15 +145,15 @@ public class AudioController {
     }
 
     /**
-     * POST /rehearsal/audio/realtime-finalize
-     * 蓄積結果を確定してダウンロード可能にし、結果ページを表示する。
+     * POST /rehearsal/audio/realtime-finalize 蓄積結果を確定してダウンロード可能にし、結果ページを表示する。
      */
     @PostMapping("/realtime-finalize")
     public String realtimeFinalize(HttpSession session, Model model) {
         List<RehearsalInstruction> instructions = getRealtimeList(session);
         session.setAttribute(SESSION_DL, instructions);
 
-        Map<String, Integer> instrumentSummary = rehearsalSrtService.countByInstrument(instructions);
+        Map<String, Integer> instrumentSummary =
+                rehearsalSrtService.countByInstrument(instructions);
         model.addAttribute("instructions", instructions);
         model.addAttribute("instrumentSummary", instrumentSummary);
         model.addAttribute("totalCount", instructions.size());
@@ -174,11 +166,11 @@ public class AudioController {
     // private helpers
     // ----------------------------------------------------------------
 
-    private List<RehearsalInstruction> doAnalyze(
-            String srtText, String analysisMode, String aiProvider) throws Exception {
+    private List<RehearsalInstruction> doAnalyze(String srtText, String analysisMode,
+            String aiProvider) throws Exception {
         if ("ai".equals(analysisMode)) {
-            AiProvider provider = "anthropic".equalsIgnoreCase(aiProvider)
-                    ? AiProvider.ANTHROPIC : AiProvider.OPENAI;
+            AiProvider provider = "anthropic".equalsIgnoreCase(aiProvider) ? AiProvider.ANTHROPIC
+                    : AiProvider.OPENAI;
             return aiAnalysisService.analyzeWithAi(srtText, provider);
         }
         // 標準: 既存の regex / キーワードマッチング
@@ -195,16 +187,22 @@ public class AudioController {
     }
 
     /**
-     * ブラウザの録音 MIME タイプを Whisper が受け付けるファイル拡張子にマッピング。
-     * Chrome: audio/webm, Safari: audio/mp4, Firefox: audio/ogg (Whisper 非対応のため webm 推奨)
+     * ブラウザの録音 MIME タイプを Whisper が受け付けるファイル拡張子にマッピング。 Chrome: audio/webm, Safari: audio/mp4,
+     * Firefox: audio/ogg (Whisper 非対応のため webm 推奨)
      */
     private String mimeToExtension(String mimeType) {
-        if (mimeType == null) return "webm";
-        if (mimeType.contains("webm")) return "webm";
-        if (mimeType.contains("mp4") || mimeType.contains("m4a")) return "mp4";
-        if (mimeType.contains("wav")) return "wav";
-        if (mimeType.contains("mpeg") || mimeType.contains("mp3")) return "mp3";
-        if (mimeType.contains("ogg")) return "ogg"; // Whisper 未サポートだが一応渡す
+        if (mimeType == null)
+            return "webm";
+        if (mimeType.contains("webm"))
+            return "webm";
+        if (mimeType.contains("mp4") || mimeType.contains("m4a"))
+            return "mp4";
+        if (mimeType.contains("wav"))
+            return "wav";
+        if (mimeType.contains("mpeg") || mimeType.contains("mp3"))
+            return "mp3";
+        if (mimeType.contains("ogg"))
+            return "ogg"; // Whisper 未サポートだが一応渡す
         return "webm";
     }
 }

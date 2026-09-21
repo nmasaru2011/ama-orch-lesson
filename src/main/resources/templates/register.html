@@ -86,7 +86,7 @@
     <div class="container">
         <h1>ユーザー登録</h1>
         <div th:if="${error}" class="error" th:text="${error}"></div>
-        <form th:action="@{/register}" method="post">
+        <form th:action="@{/web/register}" method="post">
             <div class="form-group">
                 <label for="username">ユーザー名:</label>
                 <input type="text" id="username" name="username" required autofocus>
@@ -102,7 +102,7 @@
             <button type="submit">登録</button>
         </form>
         <div class="login-link">
-            <a th:href="@{/login}">ログインページに戻る</a>
+            <a th:href="@{/web/login}">ログインページに戻る</a>
         </div>
     </div>
 </body>

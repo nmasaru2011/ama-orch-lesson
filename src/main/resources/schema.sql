@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS concert (
     PRIMARY KEY (concert_id)
 );
 -- =============================================
--- person テーブル（人物マスタ）
+-- person テーブル（人物データ）
 -- =============================================
 CREATE TABLE IF NOT EXISTS person (
     person_id BIGINT NOT NULL,
@@ -466,10 +466,11 @@ UPDATE stage_layout
 SET orch_name = (
         SELECT o.orch_name
         FROM concert_program p
-        JOIN concert c ON c.concert_id = p.concert_id
-        JOIN orch_mst o ON o.orch_id = c.orch_id
+            JOIN concert c ON c.concert_id = p.concert_id
+            JOIN orch_mst o ON o.orch_id = c.orch_id
         WHERE p.layout_id = stage_layout.layout_id
-        ORDER BY p.concert_id, p.program_no
+        ORDER BY p.concert_id,
+            p.program_no
         LIMIT 1
     )
 WHERE orch_name IS NULL;

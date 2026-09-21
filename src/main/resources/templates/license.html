@@ -110,6 +110,7 @@
         <h1>使用OSSライセンス情報</h1>
 
         <p>本アプリケーションでは、以下のオープンソースソフトウェアを使用しています。</p>
+        <p class="note">依存バージョンはプロジェクトの pom.xml の定義を基準にしています。Spring Boot が管理する依存は、Spring Boot 4.1.1 の依存関係管理に従います。</p>
 
         <h2>直接依存ライブラリ</h2>
         <table>
@@ -124,45 +125,95 @@
             <tbody>
                 <tr>
                     <td><a href="https://spring.io/projects/spring-boot" target="_blank">Spring Boot</a></td>
-                    <td>3.1.12</td>
+                    <td>4.1.1</td>
                     <td><span class="license-badge badge-apache">Apache 2.0</span></td>
                     <td>Webアプリケーションフレームワーク</td>
                 </tr>
                 <tr>
                     <td><a href="https://www.thymeleaf.org/" target="_blank">Thymeleaf</a></td>
-                    <td>3.1.x</td>
+                    <td>Spring Boot 4.1.1 管理</td>
                     <td><span class="license-badge badge-apache">Apache 2.0</span></td>
                     <td>HTMLテンプレートエンジン</td>
                 </tr>
                 <tr>
                     <td><a href="https://spring.io/projects/spring-data-jpa" target="_blank">Spring Data JPA</a></td>
-                    <td>3.1.x</td>
+                    <td>Spring Boot 4.1.1 管理</td>
                     <td><span class="license-badge badge-apache">Apache 2.0</span></td>
                     <td>データベースアクセス（ORM）</td>
                 </tr>
                 <tr>
+                    <td><a href="https://spring.io/projects/spring-security" target="_blank">Spring Security</a></td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-apache">Apache 2.0</span></td>
+                    <td>認証・認可</td>
+                </tr>
+                <tr>
+                    <td><a href="https://github.com/thymeleaf/thymeleaf-extras-springsecurity" target="_blank">Thymeleaf
+                            Extras Spring Security</a></td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-apache">Apache 2.0</span></td>
+                    <td>Thymeleaf画面での認証状態・権限制御</td>
+                </tr>
+                <tr>
                     <td><a href="https://www.h2database.com/" target="_blank">H2 Database</a></td>
-                    <td>2.1.x</td>
-                    <td><span class="license-badge badge-mpl">MPL 2.0</span> / <span class="license-badge badge-epl">EPL 1.0</span></td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-mpl">MPL 2.0</span> / <span class="license-badge badge-epl">EPL
+                            1.0</span></td>
                     <td>組み込みデータベース</td>
                 </tr>
                 <tr>
                     <td><a href="https://poi.apache.org/" target="_blank">Apache POI</a></td>
-                    <td>5.2.5</td>
+                    <td>5.5.1</td>
                     <td><span class="license-badge badge-apache">Apache 2.0</span></td>
                     <td>Excelファイル生成</td>
                 </tr>
                 <tr>
                     <td><a href="https://github.com/LibrePDF/OpenPDF" target="_blank">OpenPDF</a></td>
-                    <td>1.3.30</td>
-                    <td><span class="license-badge badge-lgpl">LGPL 2.1</span> / <span class="license-badge badge-mpl">MPL 2.0</span></td>
+                    <td>3.0.5</td>
+                    <td><span class="license-badge badge-lgpl">LGPL 2.1</span> / <span
+                            class="license-badge badge-mpl">MPL 2.0</span></td>
                     <td>PDFファイル生成</td>
                 </tr>
                 <tr>
-                    <td><a href="https://github.com/thoroldvix/youtube-transcript-api" target="_blank">YouTube Transcript API</a></td>
+                    <td><a href="https://github.com/thoroldvix/youtube-transcript-api" target="_blank">YouTube
+                            Transcript API</a></td>
                     <td>0.4.0</td>
                     <td><span class="license-badge badge-mit">MIT</span></td>
                     <td>YouTube字幕取得</td>
+                </tr>
+                <tr>
+                    <td><a href="https://jdbc.postgresql.org/" target="_blank">PostgreSQL JDBC Driver</a></td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-apache">BSD 2-Clause</span></td>
+                    <td>PostgreSQLデータベース接続</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>開発・テスト用依存ライブラリ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ライブラリ</th>
+                    <th>バージョン</th>
+                    <th>ライセンス</th>
+                    <th>用途</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><a href="https://docs.spring.io/spring-boot/reference/using/devtools.html"
+                            target="_blank">Spring Boot DevTools</a></td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-apache">Apache 2.0</span></td>
+                    <td>開発時の自動再起動・LiveReload</td>
+                </tr>
+                <tr>
+                    <td><a href="https://spring.io/projects/spring-boot" target="_blank">Spring Boot Starter Test</a>
+                    </td>
+                    <td>Spring Boot 4.1.1 管理</td>
+                    <td><span class="license-badge badge-apache">Apache 2.0</span> ほか</td>
+                    <td>テスト実行基盤（testスコープ）</td>
                 </tr>
             </tbody>
         </table>
@@ -199,7 +250,8 @@
                 </tr>
                 <tr>
                     <td><a href="https://logback.qos.ch/" target="_blank">Logback</a></td>
-                    <td><span class="license-badge badge-epl">EPL 1.0</span> / <span class="license-badge badge-lgpl">LGPL 2.1</span></td>
+                    <td><span class="license-badge badge-epl">EPL 1.0</span> / <span
+                            class="license-badge badge-lgpl">LGPL 2.1</span></td>
                     <td>ログ実装</td>
                 </tr>
                 <tr>
@@ -249,7 +301,7 @@
         </div>
 
         <hr style="margin-top: 30px;">
-        <p><a href="/">メニューに戻る</a></p>
+        <p><a href="/web">メニューに戻る</a></p>
     </div>
     <div th:replace="~{fragments/footer :: footer}"></div>
 </body>

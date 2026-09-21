@@ -1,191 +1,278 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <title th:text="${isNew} ? '練習データ 新規登録' : '練習データ 編集'">練習データ</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background-color: #f5f5f5; }
-        .container { background-color: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; border-bottom: 3px solid #28a745; padding-bottom: 10px; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-weight: bold; font-size: 13px; color: #555; margin-bottom: 4px; }
-        input[type=text], input[type=date], input[type=number], select, textarea {
-            width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 4px;
-            font-size: 14px; box-sizing: border-box; }
-        input[type=text]:focus, input[type=date]:focus, input[type=number]:focus, select:focus, textarea:focus {
-            outline: none; border-color: #28a745; box-shadow: 0 0 0 2px rgba(40,167,69,.25); }
-        textarea { height: 80px; resize: vertical; }
-        .row { display: flex; gap: 16px; }
-        .row .form-group { flex: 1; }
-        .btn { display: inline-block; padding: 9px 20px; border-radius: 4px; text-decoration: none;
-               font-size: 14px; cursor: pointer; border: none; }
-        .btn-green     { background-color: #28a745; color: white; }
-        .btn-green:hover { background-color: #218838; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-secondary:hover { background-color: #545b62; }
-        .section-title { font-size: 15px; font-weight: bold; color: #28a745;
-                         border-left: 4px solid #28a745; padding-left: 8px; margin: 20px 0 12px; }
-        .hint { font-size: 11px; color: #888; margin-top: 3px; }
-        .auto-hint { font-size: 12px; color: #28a745; margin-top: 4px; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        input[type=text],
+        input[type=date],
+        input[type=number],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input[type=text]:focus,
+        input[type=date]:focus,
+        input[type=number]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, .25);
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .row .form-group {
+            flex: 1;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 9px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-green {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-green:hover {
+            background-color: #218838;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #28a745;
+            border-left: 4px solid #28a745;
+            padding-left: 8px;
+            margin: 20px 0 12px;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .auto-hint {
+            font-size: 12px;
+            color: #28a745;
+            margin-top: 4px;
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <h1 th:text="${isNew} ? '練習データ 新規登録' : '練習データ 編集'">練習データ</h1>
+    <div class="container">
+        <h1 th:text="${isNew} ? '練習データ 新規登録' : '練習データ 編集'">練習データ</h1>
 
-    <form th:action="${isNew ? '/lesson/new' : '/lesson/' + lesson.id + '/edit'}"
-          th:object="${lesson}" method="post">
+        <form th:action="${isNew ? '/web/lesson/new' : '/web/lesson/' + lesson.id + '/edit'}" th:object="${lesson}"
+            method="post">
 
-        <!-- 演奏会情報 -->
-        <div class="section-title">演奏会情報</div>
+            <!-- 演奏会情報 -->
+            <div class="section-title">演奏会情報</div>
 
-        <div class="form-group">
-            <label for="orchFilter">オーケストラで絞り込み</label>
-            <select id="orchFilter" onchange="filterConcerts(this.value)">
-                <option value="">-- すべて --</option>
-                <option th:each="o : ${orchList}"
-                        th:value="${o.orchId}"
-                        th:text="${o.orchName}"></option>
-            </select>
-        </div>
-
-        <div class="row">
             <div class="form-group">
-                <label for="concertId">演奏会ID <span style="color:red;">*</span></label>
-                <select id="concertId" th:field="*{concertId}" required
-                        onchange="updateBranchHint(this.value)">
-                    <option value="">-- 演奏会を選択 --</option>
-                    <option th:each="c : ${mainConcertList}"
-                            th:value="${c.concertId}"
-                            th:attr="data-orch-id=${c.orchId}"
-                            th:text="${c.concertName != null
-                                       ? c.concertId + '  ' + c.concertName + '（' + c.orchId + '）'
-                                       : c.concertId}"
-                            th:selected="${c.concertId == lesson.concertId}"></option>
+                <label for="orchFilter">オーケストラで絞り込み</label>
+                <select id="orchFilter" onchange="filterConcerts(this.value)">
+                    <option value="">-- すべて --</option>
+                    <option th:each="o : ${orchList}" th:value="${o.orchId}" th:text="${o.orchName}"></option>
                 </select>
-                <div class="hint">一覧にない場合は直接入力してください</div>
-                <input type="text" id="concertIdManual" placeholder="直接入力（例: 224081YP01）"
-                       style="margin-top:6px; display:none;"
-                       oninput="document.getElementById('concertId').value=this.value">
-                <a href="#" style="font-size:11px;" onclick="toggleManual(event)">手動入力モードに切替</a>
             </div>
-            <div class="form-group" style="max-width: 120px;">
-                <label for="branchNo">枝番 <span style="color:red;">*</span></label>
-                <input type="number" id="branchNo" th:field="*{branchNo}" required min="1">
-                <div id="branchHint" class="auto-hint"></div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="concertId">演奏会ID <span style="color:red;">*</span></label>
+                    <select id="concertId" th:field="*{concertId}" required onchange="updateBranchHint(this.value)">
+                        <option value="">-- 演奏会を選択 --</option>
+                        <option th:each="c : ${mainConcertList}" th:value="${c.concertId}"
+                            th:attr="data-orch-id=${c.orchId}" th:text="${c.concertName != null
+                                       ? c.concertId + '  ' + c.concertName + '（' + c.orchId + '）'
+                                       : c.concertId}" th:selected="${c.concertId == lesson.concertId}"></option>
+                    </select>
+                    <div class="hint">一覧にない場合は直接入力してください</div>
+                    <input type="text" id="concertIdManual" placeholder="直接入力（例: 224081YP01）"
+                        style="margin-top:6px; display:none;"
+                        oninput="document.getElementById('concertId').value=this.value">
+                    <a href="#" style="font-size:11px;" onclick="toggleManual(event)">手動入力モードに切替</a>
+                </div>
+                <div class="form-group" style="max-width: 120px;">
+                    <label for="branchNo">枝番 <span style="color:red;">*</span></label>
+                    <input type="number" id="branchNo" th:field="*{branchNo}" required min="1">
+                    <div id="branchHint" class="auto-hint"></div>
+                </div>
             </div>
-        </div>
 
-        <!-- 日時 -->
-        <div class="section-title">日時</div>
+            <!-- 日時 -->
+            <div class="section-title">日時</div>
 
-        <div class="row">
+            <div class="row">
+                <div class="form-group">
+                    <label for="lessonDate">練習日 <span style="color:red;">*</span></label>
+                    <input type="date" id="lessonDate" th:field="*{lessonDate}" required>
+                </div>
+                <div class="form-group">
+                    <label for="lessonStartTimeStr">開始時間</label>
+                    <input type="text" id="lessonStartTimeStr" th:field="*{lessonStartTimeStr}" placeholder="09:00">
+                    <div class="hint">HH:mm 形式（例: 09:00）または自由記述</div>
+                </div>
+                <div class="form-group">
+                    <label for="lessonEndTimeStr">終了時間</label>
+                    <input type="text" id="lessonEndTimeStr" th:field="*{lessonEndTimeStr}" placeholder="17:00">
+                    <div class="hint">HH:mm 形式（例: 17:00）または自由記述</div>
+                </div>
+            </div>
+
+            <!-- 場所・内容 -->
+            <div class="section-title">場所・内容</div>
+
             <div class="form-group">
-                <label for="lessonDate">練習日 <span style="color:red;">*</span></label>
-                <input type="date" id="lessonDate" th:field="*{lessonDate}" required>
+                <label for="placeName">場所名</label>
+                <input type="text" id="placeName" th:field="*{placeName}" placeholder="例: 矢向地区センター">
             </div>
+
             <div class="form-group">
-                <label for="lessonStartTimeStr">開始時間</label>
-                <input type="text" id="lessonStartTimeStr" th:field="*{lessonStartTimeStr}"
-                       placeholder="09:00">
-                <div class="hint">HH:mm 形式（例: 09:00）または自由記述</div>
+                <label for="contain">内容</label>
+                <textarea id="contain" th:field="*{contain}" placeholder="例: 午前：合奏　午後：分奏"></textarea>
             </div>
-            <div class="form-group">
-                <label for="lessonEndTimeStr">終了時間</label>
-                <input type="text" id="lessonEndTimeStr" th:field="*{lessonEndTimeStr}"
-                       placeholder="17:00">
-                <div class="hint">HH:mm 形式（例: 17:00）または自由記述</div>
+
+            <!-- ボタン -->
+            <div style="margin-top:24px; display:flex; gap:12px;">
+                <button type="submit" class="btn btn-green" th:text="${isNew} ? '登録する' : '更新する'">登録する</button>
+                <a href="/web/lesson" class="btn btn-secondary">キャンセル</a>
+                <a href="/" class="btn btn-secondary">メニューへ</a>
             </div>
-        </div>
+        </form>
+    </div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
-        <!-- 場所・内容 -->
-        <div class="section-title">場所・内容</div>
-
-        <div class="form-group">
-            <label for="placeName">場所名</label>
-            <input type="text" id="placeName" th:field="*{placeName}"
-                   placeholder="例: 矢向地区センター">
-        </div>
-
-        <div class="form-group">
-            <label for="contain">内容</label>
-            <textarea id="contain" th:field="*{contain}"
-                      placeholder="例: 午前：合奏　午後：分奏"></textarea>
-        </div>
-
-        <!-- ボタン -->
-        <div style="margin-top:24px; display:flex; gap:12px;">
-            <button type="submit" class="btn btn-green"
-                    th:text="${isNew} ? '登録する' : '更新する'">登録する</button>
-            <a href="/lesson" class="btn btn-secondary">キャンセル</a>
-            <a href="/" class="btn btn-secondary">メニューへ</a>
-        </div>
-    </form>
-</div>
-<div th:replace="~{fragments/footer :: footer}"></div>
-
-<script th:inline="javascript">
-    window.addEventListener('DOMContentLoaded', () => {
-        const sel = document.getElementById('concertId');
-        if (sel && sel.value) {
-            // 選択中の演奏会に合わせてオーケストラフィルタを初期化
-            const selectedOpt = sel.querySelector('option[value="' + sel.value + '"]');
-            if (selectedOpt && selectedOpt.dataset.orchId) {
-                document.getElementById('orchFilter').value = selectedOpt.dataset.orchId;
-                filterConcerts(selectedOpt.dataset.orchId, sel.value);
-            }
-            updateBranchHint(sel.value);
-        }
-    });
-
-    function filterConcerts(orchId, keepValue) {
-        const concertSel = document.getElementById('concertId');
-        const currentVal = keepValue !== undefined ? keepValue : concertSel.value;
-        let stillVisible = !currentVal;
-        concertSel.querySelectorAll('option[data-orch-id]').forEach(opt => {
-            const show = !orchId || opt.dataset.orchId === orchId;
-            opt.hidden = !show;
-            if (show && opt.value === currentVal) stillVisible = true;
-        });
-        if (!stillVisible) {
-            concertSel.value = '';
-            updateBranchHint('');
-        } else if (keepValue !== undefined) {
-            concertSel.value = keepValue;
-        }
-    }
-
-    function updateBranchHint(concertId) {
-        if (!concertId) {
-            document.getElementById('branchHint').textContent = '';
-            return;
-        }
-        fetch('/lesson/maxBranch?concertId=' + encodeURIComponent(concertId))
-            .then(r => r.json())
-            .then(data => {
-                const hint = document.getElementById('branchHint');
-                if (data.max != null) {
-                    hint.textContent = '現在の最大: ' + data.max + '  → 次は ' + (data.max + 1);
-                } else {
-                    hint.textContent = 'まだ登録なし → 1 を推奨';
+    <script th:inline="javascript">
+        window.addEventListener('DOMContentLoaded', () => {
+            const sel = document.getElementById('concertId');
+            if (sel && sel.value) {
+                // 選択中の演奏会に合わせてオーケストラフィルタを初期化
+                const selectedOpt = sel.querySelector('option[value="' + sel.value + '"]');
+                if (selectedOpt && selectedOpt.dataset.orchId) {
+                    document.getElementById('orchFilter').value = selectedOpt.dataset.orchId;
+                    filterConcerts(selectedOpt.dataset.orchId, sel.value);
                 }
-            })
-            .catch(() => {});
-    }
+                updateBranchHint(sel.value);
+            }
+        });
 
-    function toggleManual(e) {
-        e.preventDefault();
-        const manual = document.getElementById('concertIdManual');
-        const sel    = document.getElementById('concertId');
-        if (manual.style.display === 'none') {
-            manual.style.display = 'block';
-            sel.style.display    = 'none';
-        } else {
-            manual.style.display = 'none';
-            sel.style.display    = 'block';
+        function filterConcerts(orchId, keepValue) {
+            const concertSel = document.getElementById('concertId');
+            const currentVal = keepValue !== undefined ? keepValue : concertSel.value;
+            let stillVisible = !currentVal;
+            concertSel.querySelectorAll('option[data-orch-id]').forEach(opt => {
+                const show = !orchId || opt.dataset.orchId === orchId;
+                opt.hidden = !show;
+                if (show && opt.value === currentVal) stillVisible = true;
+            });
+            if (!stillVisible) {
+                concertSel.value = '';
+                updateBranchHint('');
+            } else if (keepValue !== undefined) {
+                concertSel.value = keepValue;
+            }
         }
-    }
-</script>
+
+        function updateBranchHint(concertId) {
+            if (!concertId) {
+                document.getElementById('branchHint').textContent = '';
+                return;
+            }
+            fetch('/web/lesson/maxBranch?concertId=' + encodeURIComponent(concertId))
+                .then(r => r.json())
+                .then(data => {
+                    const hint = document.getElementById('branchHint');
+                    if (data.max != null) {
+                        hint.textContent = '現在の最大: ' + data.max + '  → 次は ' + (data.max + 1);
+                    } else {
+                        hint.textContent = 'まだ登録なし → 1 を推奨';
+                    }
+                })
+                .catch(() => { });
+        }
+
+        function toggleManual(e) {
+            e.preventDefault();
+            const manual = document.getElementById('concertIdManual');
+            const sel = document.getElementById('concertId');
+            if (manual.style.display === 'none') {
+                manual.style.display = 'block';
+                sel.style.display = 'none';
+            } else {
+                manual.style.display = 'none';
+                sel.style.display = 'block';
+            }
+        }
+    </script>
 </body>
+
 </html>

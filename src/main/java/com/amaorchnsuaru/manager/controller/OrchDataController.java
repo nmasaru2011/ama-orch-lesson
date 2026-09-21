@@ -16,17 +16,17 @@ import com.amaorchnsuaru.manager.entity.OrchData;
 import com.amaorchnsuaru.manager.repository.OrchDataRepository;
 
 @Controller
-@RequestMapping("/orch")
+@RequestMapping("/web/orch")
 public class OrchDataController {
 
     private static final Map<String, String> ORCH_TYPE_LABELS = new LinkedHashMap<>();
     static {
-        ORCH_TYPE_LABELS.put("AREA",     "地域オーケストラ");
+        ORCH_TYPE_LABELS.put("AREA", "地域オーケストラ");
         ORCH_TYPE_LABELS.put("STUDENTS", "学生オーケストラ");
-        ORCH_TYPE_LABELS.put("COMPANY",  "企業・団体");
-        ORCH_TYPE_LABELS.put("EVENT",    "イベント系");
-        ORCH_TYPE_LABELS.put("PERSON",   "個人");
-        ORCH_TYPE_LABELS.put("PREFER",   "お気に入り");
+        ORCH_TYPE_LABELS.put("COMPANY", "企業・団体");
+        ORCH_TYPE_LABELS.put("EVENT", "イベント系");
+        ORCH_TYPE_LABELS.put("PERSON", "個人");
+        ORCH_TYPE_LABELS.put("PREFER", "お気に入り");
     }
 
     private final OrchDataRepository repo;
@@ -54,17 +54,17 @@ public class OrchDataController {
     public String create(@ModelAttribute OrchData orch, RedirectAttributes ra) {
         if (repo.existsById(orch.getOrchId())) {
             ra.addFlashAttribute("errorMsg", "ID " + orch.getOrchId() + " は既に存在します。");
-            return "redirect:/orch/new";
+            return "redirect:/web/orch/new";
         }
         repo.save(orch);
         ra.addFlashAttribute("successMsg", orch.getOrchName() + " を登録しました。");
-        return "redirect:/orch";
+        return "redirect:/web/orch";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable String id, Model model) {
-        OrchData orch = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("不正なID: " + id));
+        OrchData orch =
+                repo.findById(id).orElseThrow(() -> new IllegalArgumentException("不正なID: " + id));
         model.addAttribute("orch", orch);
         model.addAttribute("orchTypeLabels", ORCH_TYPE_LABELS);
         model.addAttribute("isNew", false);
@@ -72,11 +72,12 @@ public class OrchDataController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable String id, @ModelAttribute OrchData orch, RedirectAttributes ra) {
+    public String update(@PathVariable String id, @ModelAttribute OrchData orch,
+            RedirectAttributes ra) {
         orch.setOrchId(id);
         repo.save(orch);
         ra.addFlashAttribute("successMsg", orch.getOrchName() + " を更新しました。");
-        return "redirect:/orch";
+        return "redirect:/web/orch";
     }
 
     @PostMapping("/{id}/delete")
@@ -85,6 +86,6 @@ public class OrchDataController {
             repo.delete(o);
             ra.addFlashAttribute("successMsg", o.getOrchName() + " を削除しました。");
         });
-        return "redirect:/orch";
+        return "redirect:/web/orch";
     }
 }

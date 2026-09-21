@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
     <title th:text="${editable} ? '舞台配置の編集' : '舞台配置'">舞台配置</title>
     <meta charset="UTF-8">
@@ -8,812 +8,1108 @@
     <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
     <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1320px; margin: 16px auto; padding: 16px; background-color: #f5f5f5; }
-        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; border-bottom: 3px solid #6f42c1; padding-bottom: 10px; font-size: 22px; margin-top: 0; }
-        .btn { display: inline-block; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 13px; cursor: pointer; border: none; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; }
-        .btn-purple { background-color: #6f42c1; color: white; }
-        .btn-purple:hover { background-color: #5a32a3; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .btn:disabled { opacity: .5; cursor: default; }
-        .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; font-size: 13px; }
-        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .section-title { font-size: 12px; font-weight: bold; color: #888; text-transform: uppercase;
-                         letter-spacing: 0.05em; margin: 18px 0 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-
-        .head-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
-        .head-row .fld { display: flex; flex-direction: column; }
-        .head-row label { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
-        input[type=text], input[type=number], select, textarea {
-            padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; box-sizing: border-box;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1320px;
+            margin: 16px auto;
+            padding: 16px;
+            background-color: #f5f5f5;
         }
-        input:focus, select:focus, textarea:focus { border-color: #6f42c1; outline: none; box-shadow: 0 0 0 2px rgba(111,66,193,0.2); }
 
-        .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #f8f9fa;
-                   border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; font-size: 12px; }
-        .toolbar .sep { width: 1px; height: 22px; background: #dee2e6; }
-        .dirty-badge { color: #b02a37; font-weight: bold; display: none; }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-        .work { display: flex; gap: 16px; align-items: flex-start; }
-        .stage-wrap { flex: 1; min-width: 0; overflow: auto; border: 1px solid #dee2e6; border-radius: 6px; background: #eceff1; padding: 10px; }
-        .stage { position: relative; margin: 0 auto; background-color: #fbf7f0;
-                 background-image: linear-gradient(to right, rgba(0,0,0,.05) 1px, transparent 1px),
-                                   linear-gradient(to bottom, rgba(0,0,0,.05) 1px, transparent 1px);
-                 border: 2px solid #c9b8a8; border-radius: 6px; touch-action: none; }
-        .stage-hint { position: absolute; left: 50%; transform: translateX(-50%); font-size: 11px;
-                      color: #a08e7c; letter-spacing: .4em; pointer-events: none; }
-        .stage-hint.back  { top: 4px; }
-        .stage-hint.front { bottom: 4px; }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #6f42c1;
+            padding-bottom: 10px;
+            font-size: 22px;
+            margin-top: 0;
+        }
 
-        .seat { position: absolute; width: 54px; height: 54px; margin-left: -27px; margin-top: -27px; }
-        .seat-rot { position: absolute; inset: 0; }
-        .seat-arrow { position: absolute; left: 50%; top: -12px; margin-left: -7px; width: 0; height: 0;
-                      border-left: 7px solid transparent; border-right: 7px solid transparent;
-                      border-bottom: 11px solid #6f42c1; cursor: crosshair; }
-        .seat-body { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #6f42c1; background: #fff;
-                     display: flex; flex-direction: column; align-items: center; justify-content: center;
-                     font-size: 10px; line-height: 1.15; cursor: grab; user-select: none; overflow: hidden; }
-        .seat-body .code { font-weight: bold; }
-        .seat-body .pult { font-size: 9px; color: #666; }
-        .seat-body .name { font-weight: bold; text-align: center; line-height: 1.1;
-                           word-break: break-all; padding: 0 2px; }
-        .seat-label { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-                      font-size: 10px; color: #333; background: rgba(255,255,255,.82); padding: 0 3px;
-                      border-radius: 3px; pointer-events: none; }
-        .seat.selected .seat-body { box-shadow: 0 0 0 3px rgba(111,66,193,.45); }
-        .seat.dragging .seat-body { cursor: grabbing; }
-        .seat.unassigned .seat-body { border-style: dashed; color: #999; }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+        }
 
-        .inspector { width: 290px; flex: 0 0 290px; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; background: #fff; }
-        .inspector h3 { margin: 0 0 10px; font-size: 14px; color: #4a2b8c; }
-        .insp-row { margin-bottom: 8px; }
-        .insp-row label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
-        .insp-row input, .insp-row select, .insp-row textarea { width: 100%; }
-        .insp-cols { display: flex; gap: 8px; }
-        .insp-cols > div { flex: 1; }
-        .insp-empty { color: #999; font-size: 12px; }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
 
-        .seat-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .seat-table th { background: #f0ebff; color: #4a2b8c; padding: 5px 7px; text-align: left; border-bottom: 2px solid #6f42c1; }
-        .seat-table td { padding: 4px 7px; border-bottom: 1px solid #eee; }
-        .seat-table tr { cursor: pointer; }
-        .seat-table tr:hover { background: #faf8ff; }
-        .seat-table tr.on { background: #f0ebff; }
-        .usage-list { font-size: 12px; color: #666; }
+        .btn-purple {
+            background-color: #6f42c1;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background-color: #5a32a3;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: default;
+        }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 18px 0 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
+        }
+
+        .head-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .head-row .fld {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .head-row label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        input[type=text],
+        input[type=number],
+        select,
+        textarea {
+            padding: 6px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #6f42c1;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.2);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .toolbar .sep {
+            width: 1px;
+            height: 22px;
+            background: #dee2e6;
+        }
+
+        .dirty-badge {
+            color: #b02a37;
+            font-weight: bold;
+            display: none;
+        }
+
+        .work {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .stage-wrap {
+            flex: 1;
+            min-width: 0;
+            overflow: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #eceff1;
+            padding: 10px;
+        }
+
+        .stage {
+            position: relative;
+            margin: 0 auto;
+            background-color: #fbf7f0;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, .05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, .05) 1px, transparent 1px);
+            border: 2px solid #c9b8a8;
+            border-radius: 6px;
+            touch-action: none;
+        }
+
+        .stage-hint {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: #a08e7c;
+            letter-spacing: .4em;
+            pointer-events: none;
+        }
+
+        .stage-hint.back {
+            top: 4px;
+        }
+
+        .stage-hint.front {
+            bottom: 4px;
+        }
+
+        .seat {
+            position: absolute;
+            width: 54px;
+            height: 54px;
+            margin-left: -27px;
+            margin-top: -27px;
+        }
+
+        .seat-rot {
+            position: absolute;
+            inset: 0;
+        }
+
+        .seat-arrow {
+            position: absolute;
+            left: 50%;
+            top: -12px;
+            margin-left: -7px;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 11px solid #6f42c1;
+            cursor: crosshair;
+        }
+
+        .seat-body {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid #6f42c1;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            line-height: 1.15;
+            cursor: grab;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .seat-body .code {
+            font-weight: bold;
+        }
+
+        .seat-body .pult {
+            font-size: 9px;
+            color: #666;
+        }
+
+        .seat-body .name {
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.1;
+            word-break: break-all;
+            padding: 0 2px;
+        }
+
+        .seat-label {
+            position: absolute;
+            top: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 10px;
+            color: #333;
+            background: rgba(255, 255, 255, .82);
+            padding: 0 3px;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .seat.selected .seat-body {
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, .45);
+        }
+
+        .seat.dragging .seat-body {
+            cursor: grabbing;
+        }
+
+        .seat.unassigned .seat-body {
+            border-style: dashed;
+            color: #999;
+        }
+
+        .inspector {
+            width: 290px;
+            flex: 0 0 290px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .inspector h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #4a2b8c;
+        }
+
+        .insp-row {
+            margin-bottom: 8px;
+        }
+
+        .insp-row label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .insp-row input,
+        .insp-row select,
+        .insp-row textarea {
+            width: 100%;
+        }
+
+        .insp-cols {
+            display: flex;
+            gap: 8px;
+        }
+
+        .insp-cols>div {
+            flex: 1;
+        }
+
+        .insp-empty {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .seat-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .seat-table th {
+            background: #f0ebff;
+            color: #4a2b8c;
+            padding: 5px 7px;
+            text-align: left;
+            border-bottom: 2px solid #6f42c1;
+        }
+
+        .seat-table td {
+            padding: 4px 7px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .seat-table tr {
+            cursor: pointer;
+        }
+
+        .seat-table tr:hover {
+            background: #faf8ff;
+        }
+
+        .seat-table tr.on {
+            background: #f0ebff;
+        }
+
+        .usage-list {
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <h1 th:text="${editable} ? '舞台配置の編集' : '舞台配置'">舞台配置</h1>
+    <div class="container">
+        <h1 th:text="${editable} ? '舞台配置の編集' : '舞台配置'">舞台配置</h1>
 
-    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+        <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
 
-    <div class="head-row">
-        <div class="fld" style="flex:1; min-width:240px;">
-            <label for="layoutName">配置名</label>
-            <input type="text" id="layoutName" maxlength="64" th:value="${layout.layoutName}"
-                   th:disabled="${!editable}">
-        </div>
-        <div class="fld" style="min-width:180px;">
-            <label for="orchName">団体名</label>
-            <input type="text" id="orchName" maxlength="64" th:value="${layout.orchName}"
-                   placeholder="未入力なら演奏会の団体名" th:disabled="${!editable}">
-        </div>
-        <div class="fld">
-            <label for="stageWidth">舞台幅</label>
-            <input type="number" id="stageWidth" min="400" max="4000" step="50"
-                   th:value="${layout.stageWidth}" th:disabled="${!editable}" style="width:90px;">
-        </div>
-        <div class="fld">
-            <label for="stageDepth">舞台奥行</label>
-            <input type="number" id="stageDepth" min="300" max="4000" step="50"
-                   th:value="${layout.stageDepth}" th:disabled="${!editable}" style="width:90px;">
-        </div>
-        <div class="fld" style="flex:1; min-width:200px;">
-            <label for="layoutMemo">メモ</label>
-            <input type="text" id="layoutMemo" th:value="${layout.memo}" th:disabled="${!editable}">
-        </div>
-    </div>
-
-    <div class="toolbar" th:if="${editable}">
-        <button type="button" class="btn btn-purple btn-sm" id="btnSave">保存</button>
-        <span class="dirty-badge" id="dirtyBadge">未保存の変更あり</span>
-        <span class="sep"></span>
-        <select id="addPart" style="font-size:12px;"></select>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnAdd">席を追加</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnDup">選択を複製</button>
-        <button type="button" class="btn btn-danger btn-sm" id="btnDel">選択を削除</button>
-        <span class="sep"></span>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnFaceAll">全員を指揮者に向ける</button>
-        <label><input type="checkbox" id="snapGrid" checked> グリッド吸着(10)</label>
-        <span class="sep"></span>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnZoomOut">−</button>
-        <span id="zoomLabel">100%</span>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnZoomIn">＋</button>
-    </div>
-
-    <div class="work">
-        <div class="stage-wrap" id="stageWrap">
-            <div class="stage" id="stage">
-                <div class="stage-hint back">舞台奥</div>
-                <div class="stage-hint front">客席</div>
+        <div class="head-row">
+            <div class="fld" style="flex:1; min-width:240px;">
+                <label for="layoutName">配置名</label>
+                <input type="text" id="layoutName" maxlength="64" th:value="${layout.layoutName}"
+                    th:disabled="${!editable}">
+            </div>
+            <div class="fld" style="min-width:180px;">
+                <label for="orchName">団体名</label>
+                <input type="text" id="orchName" maxlength="64" th:value="${layout.orchName}" placeholder="未入力なら演奏会の団体名"
+                    th:disabled="${!editable}">
+            </div>
+            <div class="fld">
+                <label for="stageWidth">舞台幅</label>
+                <input type="number" id="stageWidth" min="400" max="4000" step="50" th:value="${layout.stageWidth}"
+                    th:disabled="${!editable}" style="width:90px;">
+            </div>
+            <div class="fld">
+                <label for="stageDepth">舞台奥行</label>
+                <input type="number" id="stageDepth" min="300" max="4000" step="50" th:value="${layout.stageDepth}"
+                    th:disabled="${!editable}" style="width:90px;">
+            </div>
+            <div class="fld" style="flex:1; min-width:200px;">
+                <label for="layoutMemo">メモ</label>
+                <input type="text" id="layoutMemo" th:value="${layout.memo}" th:disabled="${!editable}">
             </div>
         </div>
 
-        <div class="inspector" th:if="${editable}">
-            <h3>座席の編集</h3>
-            <div id="inspEmpty" class="insp-empty">座席をクリックすると編集できます。<br><br>
-                丸をドラッグ＝移動<br>▲をドラッグ＝向きの変更</div>
-            <div id="inspBody" style="display:none;">
-                <div class="insp-row">
-                    <label for="fRole">役割</label>
-                    <select id="fRole">
-                        <option value="CONDUCTOR">指揮者</option>
-                        <option value="PLAYER">奏者</option>
-                        <option value="SOLOIST">ソリスト</option>
-                        <option value="OTHER">その他</option>
-                    </select>
+        <div class="toolbar" th:if="${editable}">
+            <button type="button" class="btn btn-purple btn-sm" id="btnSave">保存</button>
+            <span class="dirty-badge" id="dirtyBadge">未保存の変更あり</span>
+            <span class="sep"></span>
+            <select id="addPart" style="font-size:12px;"></select>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnAdd">席を追加</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnDup">選択を複製</button>
+            <button type="button" class="btn btn-danger btn-sm" id="btnDel">選択を削除</button>
+            <span class="sep"></span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnFaceAll">全員を指揮者に向ける</button>
+            <label><input type="checkbox" id="snapGrid" checked> グリッド吸着(10)</label>
+            <span class="sep"></span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnZoomOut">−</button>
+            <span id="zoomLabel">100%</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnZoomIn">＋</button>
+        </div>
+
+        <div class="work">
+            <div class="stage-wrap" id="stageWrap">
+                <div class="stage" id="stage">
+                    <div class="stage-hint back">舞台奥</div>
+                    <div class="stage-hint front">客席</div>
                 </div>
-                <div class="insp-cols">
+            </div>
+
+            <div class="inspector" th:if="${editable}">
+                <h3>座席の編集</h3>
+                <div id="inspEmpty" class="insp-empty">座席をクリックすると編集できます。<br><br>
+                    丸をドラッグ＝移動<br>▲をドラッグ＝向きの変更</div>
+                <div id="inspBody" style="display:none;">
                     <div class="insp-row">
-                        <label for="fPartCode">パートコード</label>
-                        <input type="text" id="fPartCode" maxlength="16">
-                    </div>
-                    <div class="insp-row">
-                        <label for="fPartName">パート名</label>
-                        <input type="text" id="fPartName" maxlength="32">
-                    </div>
-                </div>
-                <div class="insp-cols">
-                    <div class="insp-row">
-                        <label for="fPult">プルト</label>
-                        <input type="number" id="fPult" min="0" max="99">
-                    </div>
-                    <div class="insp-row">
-                        <label for="fSide">表／裏</label>
-                        <select id="fSide">
-                            <option value="">-</option>
-                            <option value="OUT">表（客席側）</option>
-                            <option value="IN">裏（指揮者側）</option>
+                        <label for="fRole">役割</label>
+                        <select id="fRole">
+                            <option value="CONDUCTOR">指揮者</option>
+                            <option value="PLAYER">奏者</option>
+                            <option value="SOLOIST">ソリスト</option>
+                            <option value="OTHER">その他</option>
                         </select>
                     </div>
-                </div>
-                <div class="insp-row">
-                    <label for="personFilter">人物（人物マスタから選択）</label>
-                    <input type="text" id="personFilter" placeholder="氏名・かなで絞り込み" style="margin-bottom:4px;">
-                    <select id="fPerson" size="1"></select>
-                </div>
-                <div class="insp-row">
-                    <label for="fPersonName">表示名</label>
-                    <input type="text" id="fPersonName" maxlength="32" placeholder="マスタ外の人はここに直接入力">
-                </div>
-                <div class="insp-cols">
-                    <div class="insp-row">
-                        <label for="fX">X（下手→上手）</label>
-                        <input type="number" id="fX">
+                    <div class="insp-cols">
+                        <div class="insp-row">
+                            <label for="fPartCode">パートコード</label>
+                            <input type="text" id="fPartCode" maxlength="16">
+                        </div>
+                        <div class="insp-row">
+                            <label for="fPartName">パート名</label>
+                            <input type="text" id="fPartName" maxlength="32">
+                        </div>
+                    </div>
+                    <div class="insp-cols">
+                        <div class="insp-row">
+                            <label for="fPult">プルト</label>
+                            <input type="number" id="fPult" min="0" max="99">
+                        </div>
+                        <div class="insp-row">
+                            <label for="fSide">表／裏</label>
+                            <select id="fSide">
+                                <option value="">-</option>
+                                <option value="OUT">表（客席側）</option>
+                                <option value="IN">裏（指揮者側）</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="insp-row">
-                        <label for="fY">Y（舞台奥→客席）</label>
-                        <input type="number" id="fY">
+                        <label for="personFilter">人物（人物マスタから選択）</label>
+                        <input type="text" id="personFilter" placeholder="氏名・かなで絞り込み" style="margin-bottom:4px;">
+                        <select id="fPerson" size="1"></select>
                     </div>
-                </div>
-                <div class="insp-row">
-                    <label for="fRot">向き <span id="rotLabel">0°</span>（0=舞台奥 / 180=客席）</label>
-                    <input type="range" id="fRot" min="0" max="359" step="1">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btnFaceOne" style="margin-top:4px;">指揮者を向く</button>
-                </div>
-                <div class="insp-row">
-                    <label for="fMemo">メモ</label>
-                    <input type="text" id="fMemo" maxlength="128">
+                    <div class="insp-row">
+                        <label for="fPersonName">表示名</label>
+                        <input type="text" id="fPersonName" maxlength="32" placeholder="マスタ外の人はここに直接入力">
+                    </div>
+                    <div class="insp-cols">
+                        <div class="insp-row">
+                            <label for="fX">X（下手→上手）</label>
+                            <input type="number" id="fX">
+                        </div>
+                        <div class="insp-row">
+                            <label for="fY">Y（舞台奥→客席）</label>
+                            <input type="number" id="fY">
+                        </div>
+                    </div>
+                    <div class="insp-row">
+                        <label for="fRot">向き <span id="rotLabel">0°</span>（0=舞台奥 / 180=客席）</label>
+                        <input type="range" id="fRot" min="0" max="359" step="1">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnFaceOne"
+                            style="margin-top:4px;">指揮者を向く</button>
+                    </div>
+                    <div class="insp-row">
+                        <label for="fMemo">メモ</label>
+                        <input type="text" id="fMemo" maxlength="128">
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="section-title">座席一覧</div>
-    <table class="seat-table">
-        <thead>
-            <tr>
-                <th style="width:36px;">#</th>
-                <th style="width:120px;">パート</th>
-                <th style="width:70px;">プルト</th>
-                <th>人</th>
-                <th style="width:110px;">座標</th>
-                <th style="width:60px;">向き</th>
-            </tr>
-        </thead>
-        <tbody id="seatTableBody"></tbody>
-    </table>
+        <div class="section-title">座席一覧</div>
+        <table class="seat-table">
+            <thead>
+                <tr>
+                    <th style="width:36px;">#</th>
+                    <th style="width:120px;">パート</th>
+                    <th style="width:70px;">プルト</th>
+                    <th>人</th>
+                    <th style="width:110px;">座標</th>
+                    <th style="width:60px;">向き</th>
+                </tr>
+            </thead>
+            <tbody id="seatTableBody"></tbody>
+        </table>
 
-    <div class="section-title">この配置を使っている曲</div>
-    <div class="usage-list">
-        <span th:if="${#lists.isEmpty(usages)}">（まだどの曲にも紐付いていません）</span>
-        <div th:each="u : ${usages}">
-            <a th:href="@{/concert/{id}/edit(id=${u.concertId})}"
-               th:text="${u.concertName} + ' / No.' + ${u.programNo} + ' ' + ${u.musicTitle}"
-               style="color:#6f42c1;"></a>
+        <div class="section-title">この配置を使っている曲</div>
+        <div class="usage-list">
+            <span th:if="${#lists.isEmpty(usages)}">（まだどの曲にも紐付いていません）</span>
+            <div th:each="u : ${usages}">
+                <a th:href="@{/web/concert/{id}/edit(id=${u.concertId})}"
+                    th:text="${u.concertName} + ' / No.' + ${u.programNo} + ' ' + ${u.musicTitle}"
+                    style="color:#6f42c1;"></a>
+            </div>
+        </div>
+
+        <div class="section-title">書き出し</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <a th:href="@{/web/layout/{id}/export.pptx(id=${layout.layoutId})}" class="btn btn-purple">PowerPoint
+                (.pptx)</a>
+            <a th:href="@{/web/layout/{id}/export.svg(id=${layout.layoutId})}" class="btn btn-secondary">SVG</a>
+            <a th:href="@{/web/layout/{id}/export.3mf(id=${layout.layoutId})}" class="btn btn-secondary">3D (.3mf /
+                ペイント3D)</a>
+            <span style="font-size:11px; color:#888;">
+                保存済みの内容が出力されます。編集中の変更は先に「保存」してください。
+            </span>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="/web/layout" class="btn btn-secondary">配置一覧へ</a>
+            <a href="/" class="btn btn-secondary">メニューへ</a>
+            <span sec:authorize="hasRole('ADMIN')" th:if="${editable}">
+                <form th:action="@{/web/layout/{id}/template(id=${layout.layoutId})}" method="post"
+                    style="display:inline;" onsubmit="return confirm('現在の座席をすべて破棄して、標準オーケストラ配置で置き換えます。よろしいですか？')">
+                    <button type="submit" class="btn btn-secondary">標準配置で置き換える</button>
+                </form>
+                <form th:action="@{/web/layout/{id}/duplicate(id=${layout.layoutId})}" method="post"
+                    style="display:inline;">
+                    <button type="submit" class="btn btn-secondary">この配置を複製</button>
+                </form>
+            </span>
         </div>
     </div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
-    <div class="section-title">書き出し</div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-        <a th:href="@{/layout/{id}/export.pptx(id=${layout.layoutId})}" class="btn btn-purple">PowerPoint (.pptx)</a>
-        <a th:href="@{/layout/{id}/export.svg(id=${layout.layoutId})}" class="btn btn-secondary">SVG</a>
-        <a th:href="@{/layout/{id}/export.3mf(id=${layout.layoutId})}" class="btn btn-secondary">3D (.3mf / ペイント3D)</a>
-        <span style="font-size:11px; color:#888;">
-            保存済みの内容が出力されます。編集中の変更は先に「保存」してください。
-        </span>
-    </div>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const LAYOUT_ID = /*[[${layout.layoutId}]]*/ 0;
+        const EDITABLE = /*[[${editable}]]*/ false;
+        const PERSONS = /*[[${personOptions}]]*/[];
+        const INIT_SEATS = /*[[${seats}]]*/[];
 
-    <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
-        <a href="/layout" class="btn btn-secondary">配置一覧へ</a>
-        <a href="/" class="btn btn-secondary">メニューへ</a>
-        <span sec:authorize="hasRole('ADMIN')" th:if="${editable}">
-            <form th:action="@{/layout/{id}/template(id=${layout.layoutId})}" method="post" style="display:inline;"
-                  onsubmit="return confirm('現在の座席をすべて破棄して、標準オーケストラ配置で置き換えます。よろしいですか？')">
-                <button type="submit" class="btn btn-secondary">標準配置で置き換える</button>
-            </form>
-            <form th:action="@{/layout/{id}/duplicate(id=${layout.layoutId})}" method="post" style="display:inline;">
-                <button type="submit" class="btn btn-secondary">この配置を複製</button>
-            </form>
-        </span>
-    </div>
-</div>
-<div th:replace="~{fragments/footer :: footer}"></div>
-
-<script th:inline="javascript">
-/*<![CDATA[*/
-const LAYOUT_ID = /*[[${layout.layoutId}]]*/ 0;
-const EDITABLE  = /*[[${editable}]]*/ false;
-const PERSONS   = /*[[${personOptions}]]*/ [];
-const INIT_SEATS = /*[[${seats}]]*/ [];
-
-// パートごとの色（枠線, 背景）
-const PART_STYLE = {
-    Cond: ['#dc3545', '#fdeef0'],
-    Vn1: ['#6f42c1', '#f3eeff'], Vn2: ['#6f42c1', '#f3eeff'],
-    Va:  ['#5936a8', '#f3eeff'], Vc:  ['#5936a8', '#f3eeff'], Cb: ['#45298a', '#f3eeff'],
-    Fl:  ['#198754', '#e9f7f0'], Ob:  ['#198754', '#e9f7f0'],
-    Cl:  ['#198754', '#e9f7f0'], Fg:  ['#198754', '#e9f7f0'],
-    Hr:  ['#fd7e14', '#fff3e8'], Tp:  ['#fd7e14', '#fff3e8'],
-    Tb:  ['#e8590c', '#fff3e8'], Tu:  ['#e8590c', '#fff3e8'],
-    Timp:['#6c757d', '#f1f3f5'], Perc:['#6c757d', '#f1f3f5'],
-    Hp:  ['#0d6efd', '#e7f1ff'], Pf:  ['#0d6efd', '#e7f1ff']
-};
-const DEFAULT_STYLE = ['#495057', '#f8f9fa'];
-
-// 「席を追加」のプルダウン
-const PART_PRESETS = [
-    ['Cond', '指揮者'], ['Vn1', '1stヴァイオリン'], ['Vn2', '2ndヴァイオリン'],
-    ['Va', 'ヴィオラ'], ['Vc', 'チェロ'], ['Cb', 'コントラバス'],
-    ['Fl', 'フルート'], ['Ob', 'オーボエ'], ['Cl', 'クラリネット'], ['Fg', 'ファゴット'],
-    ['Hr', 'ホルン'], ['Tp', 'トランペット'], ['Tb', 'トロンボーン'], ['Tu', 'チューバ'],
-    ['Timp', 'ティンパニ'], ['Perc', '打楽器'], ['Hp', 'ハープ'], ['Pf', 'ピアノ'],
-    ['', 'その他']
-];
-
-const stageEl    = document.getElementById('stage');
-const stageWrap  = document.getElementById('stageWrap');
-const tableBody  = document.getElementById('seatTableBody');
-
-let seats     = [];
-let selected  = -1;   // seats 内のインデックス
-let zoom      = 1;
-let dirty     = false;
-let uidSeq    = 1;
-
-// ---------------------------------------------------------
-// 初期化
-// ---------------------------------------------------------
-function stageWidth()  { return num(document.getElementById('stageWidth').value, 1200); }
-function stageDepth()  { return num(document.getElementById('stageDepth').value, 800); }
-
-function num(v, fallback) {
-    const n = parseInt(v, 10);
-    return isNaN(n) ? fallback : n;
-}
-
-function init() {
-    seats = (INIT_SEATS || []).map(s => ({
-        uid:        uidSeq++,
-        seatId:     s.seatId,
-        roleType:   s.roleType || 'PLAYER',
-        partCode:   s.partCode || '',
-        partName:   s.partName || '',
-        pultNo:     s.pultNo,
-        seatSide:   s.seatSide || '',
-        personId:   s.personId,
-        personName: s.personName || '',
-        posX:       s.posX,
-        posY:       s.posY,
-        rotation:   s.rotation == null ? 0 : s.rotation,
-        memo:       s.memo || ''
-    }));
-
-    fitZoom();
-    if (EDITABLE) {
-        buildPartPresets();
-        buildPersonOptions('');
-        bindToolbar();
-        bindInspector();
-        window.addEventListener('beforeunload', e => {
-            if (dirty) { e.preventDefault(); e.returnValue = ''; }
-        });
-    }
-    window.addEventListener('resize', () => { fitZoom(); render(); });
-    render();
-}
-
-/** 表示領域に収まる倍率を求める（最大等倍） */
-function fitZoom() {
-    const avail = Math.max(320, stageWrap.clientWidth - 24);
-    zoom = Math.min(1, avail / stageWidth());
-    updateZoomLabel();
-}
-
-function updateZoomLabel() {
-    const el = document.getElementById('zoomLabel');
-    if (el) el.textContent = Math.round(zoom * 100) + '%';
-}
-
-// ---------------------------------------------------------
-// 描画
-// ---------------------------------------------------------
-function render() {
-    const w = stageWidth(), d = stageDepth();
-    stageEl.style.width  = (w * zoom) + 'px';
-    stageEl.style.height = (d * zoom) + 'px';
-    stageEl.style.backgroundSize = (50 * zoom) + 'px ' + (50 * zoom) + 'px';
-
-    stageEl.querySelectorAll('.seat').forEach(el => el.remove());
-    seats.forEach((s, i) => stageEl.appendChild(buildSeatEl(s, i)));
-    renderTable();
-}
-
-function buildSeatEl(s, idx) {
-    const [line, bg] = styleOf(s);
-    const el = document.createElement('div');
-    el.className = 'seat' + (idx === selected ? ' selected' : '') + (s.personName ? '' : ' unassigned');
-    el.dataset.idx = idx;
-    placeSeatEl(el, s);
-
-    const rot = document.createElement('div');
-    rot.className = 'seat-rot';
-    rot.style.transform = 'rotate(' + s.rotation + 'deg)';
-    const arrow = document.createElement('div');
-    arrow.className = 'seat-arrow';
-    arrow.style.borderBottomColor = line;
-    rot.appendChild(arrow);
-
-    const body = document.createElement('div');
-    body.className = 'seat-body';
-    body.style.borderColor = line;
-    body.style.background = bg;
-
-    // 人が割り当てられていれば丸の中に氏名、丸の下にパート名。
-    // 未割り当てなら丸の中にパートコードのみ（下には何も出さない）。
-    const main = document.createElement('span');
-    if (s.personName) {
-        main.className = 'name';
-        main.textContent = s.personName;
-        main.style.fontSize = nameFontSize(s.personName);
-    } else {
-        main.className = 'code';
-        main.textContent = s.roleType === 'CONDUCTOR' ? '指揮' : (s.partCode || '—');
-    }
-    body.appendChild(main);
-
-    const sub = pultLabel(s);
-    if (sub) {
-        const p = document.createElement('span');
-        p.className = 'pult';
-        p.textContent = sub;
-        body.appendChild(p);
-    }
-
-    el.appendChild(rot);
-    el.appendChild(body);
-
-    if (s.personName) {
-        const label = document.createElement('div');
-        label.className = 'seat-label';
-        label.textContent = partLabel(s);
-        el.appendChild(label);
-    }
-
-    if (EDITABLE) {
-        body.addEventListener('pointerdown', ev => startDrag(ev, idx, el, false));
-        arrow.addEventListener('pointerdown', ev => startDrag(ev, idx, el, true));
-    }
-    return el;
-}
-
-function placeSeatEl(el, s) {
-    el.style.left = (s.posX * zoom) + 'px';
-    el.style.top  = (s.posY * zoom) + 'px';
-}
-
-function styleOf(s) {
-    if (s.roleType === 'CONDUCTOR') return PART_STYLE.Cond;
-    return PART_STYLE[s.partCode] || DEFAULT_STYLE;
-}
-
-function pultLabel(s) {
-    const side = s.seatSide === 'OUT' ? '表' : (s.seatSide === 'IN' ? '裏' : '');
-    if (s.pultNo) return s.pultNo + 'pult' + side;
-    return side;
-}
-
-/** 丸の下に出すパート表示。パート名が無ければコードで代用する */
-function partLabel(s) {
-    if (s.roleType === 'CONDUCTOR') return s.partName || '指揮者';
-    return s.partName || s.partCode || '';
-}
-
-/** 氏名の長さに応じて丸の中の文字サイズを決める */
-function nameFontSize(name) {
-    const len = (name || '').length;
-    if (len <= 4) return '11px';
-    if (len <= 6) return '9px';
-    return '8px';
-}
-
-function renderTable() {
-    tableBody.innerHTML = '';
-    seats.forEach((s, i) => {
-        const tr = document.createElement('tr');
-        if (i === selected) tr.className = 'on';
-        tr.innerHTML =
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + esc(s.roleType === 'CONDUCTOR' ? '指揮者' : (s.partName || s.partCode || '—')) + '</td>' +
-            '<td>' + esc(pultLabel(s) || '-') + '</td>' +
-            '<td>' + esc(s.personName || '（未定）') + '</td>' +
-            '<td>' + s.posX + ', ' + s.posY + '</td>' +
-            '<td>' + s.rotation + '°</td>';
-        tr.addEventListener('click', () => select(i));
-        tableBody.appendChild(tr);
-    });
-}
-
-function esc(v) {
-    return String(v == null ? '' : v)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// ---------------------------------------------------------
-// ドラッグ（移動・回転）
-// ---------------------------------------------------------
-let drag = null;
-
-function startDrag(ev, idx, el, rotating) {
-    ev.preventDefault();
-    ev.stopPropagation();
-    select(idx);
-    const s = seats[idx];
-    const p = toStageCoords(ev);
-    drag = {
-        idx: idx, el: el, rotating: rotating,
-        offsetX: p.x - s.posX, offsetY: p.y - s.posY
-    };
-    el.classList.add('dragging');
-    el.setPointerCapture(ev.pointerId);
-    el.addEventListener('pointermove', onDragMove);
-    el.addEventListener('pointerup', onDragEnd);
-    el.addEventListener('pointercancel', onDragEnd);
-}
-
-function onDragMove(ev) {
-    if (!drag) return;
-    const s = seats[drag.idx];
-    const p = toStageCoords(ev);
-    if (drag.rotating) {
-        const dx = p.x - s.posX, dy = p.y - s.posY;
-        if (dx === 0 && dy === 0) return;
-        let deg = Math.atan2(dx, -dy) * 180 / Math.PI;
-        deg = Math.round(((deg % 360) + 360) % 360 / 5) * 5;
-        s.rotation = deg % 360;
-        drag.el.querySelector('.seat-rot').style.transform = 'rotate(' + s.rotation + 'deg)';
-    } else {
-        let x = p.x - drag.offsetX;
-        let y = p.y - drag.offsetY;
-        if (document.getElementById('snapGrid').checked) {
-            x = Math.round(x / 10) * 10;
-            y = Math.round(y / 10) * 10;
-        }
-        s.posX = clamp(Math.round(x), 0, stageWidth());
-        s.posY = clamp(Math.round(y), 0, stageDepth());
-        placeSeatEl(drag.el, s);
-    }
-    syncInspector();
-    markDirty();
-}
-
-function onDragEnd(ev) {
-    if (!drag) return;
-    drag.el.classList.remove('dragging');
-    drag.el.removeEventListener('pointermove', onDragMove);
-    drag.el.removeEventListener('pointerup', onDragEnd);
-    drag.el.removeEventListener('pointercancel', onDragEnd);
-    drag = null;
-    renderTable();
-}
-
-function toStageCoords(ev) {
-    const rect = stageEl.getBoundingClientRect();
-    return { x: (ev.clientX - rect.left) / zoom, y: (ev.clientY - rect.top) / zoom };
-}
-
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-
-// ---------------------------------------------------------
-// 選択とインスペクタ
-// ---------------------------------------------------------
-function select(idx) {
-    selected = idx;
-    stageEl.querySelectorAll('.seat').forEach(el => {
-        el.classList.toggle('selected', parseInt(el.dataset.idx, 10) === idx);
-    });
-    [...tableBody.rows].forEach((tr, i) => tr.classList.toggle('on', i === idx));
-    syncInspector();
-}
-
-function syncInspector() {
-    if (!EDITABLE) return;
-    const body  = document.getElementById('inspBody');
-    const empty = document.getElementById('inspEmpty');
-    if (selected < 0 || !seats[selected]) {
-        body.style.display = 'none';
-        empty.style.display = 'block';
-        return;
-    }
-    const s = seats[selected];
-    body.style.display = 'block';
-    empty.style.display = 'none';
-    document.getElementById('fRole').value       = s.roleType;
-    document.getElementById('fPartCode').value   = s.partCode;
-    document.getElementById('fPartName').value   = s.partName;
-    document.getElementById('fPult').value       = s.pultNo == null ? '' : s.pultNo;
-    document.getElementById('fSide').value       = s.seatSide || '';
-    document.getElementById('fPerson').value     = s.personId == null ? '' : String(s.personId);
-    document.getElementById('fPersonName').value = s.personName;
-    document.getElementById('fX').value          = s.posX;
-    document.getElementById('fY').value          = s.posY;
-    document.getElementById('fRot').value        = s.rotation;
-    document.getElementById('rotLabel').textContent = s.rotation + '°';
-    document.getElementById('fMemo').value       = s.memo;
-}
-
-function bindInspector() {
-    const apply = (id, fn) => {
-        const el = document.getElementById(id);
-        el.addEventListener('input', () => {
-            if (selected < 0) return;
-            fn(seats[selected], el);
-            markDirty();
-            render();
-            select(selected);
-        });
-    };
-    apply('fRole',     (s, el) => s.roleType = el.value);
-    apply('fPartCode', (s, el) => s.partCode = el.value.trim());
-    apply('fPartName', (s, el) => s.partName = el.value.trim());
-    apply('fPult',     (s, el) => s.pultNo = el.value === '' ? null : parseInt(el.value, 10));
-    apply('fSide',     (s, el) => s.seatSide = el.value);
-    apply('fPersonName', (s, el) => s.personName = el.value.trim());
-    apply('fX',        (s, el) => s.posX = clamp(num(el.value, s.posX), 0, stageWidth()));
-    apply('fY',        (s, el) => s.posY = clamp(num(el.value, s.posY), 0, stageDepth()));
-    apply('fMemo',     (s, el) => s.memo = el.value);
-
-    document.getElementById('fRot').addEventListener('input', () => {
-        if (selected < 0) return;
-        const s = seats[selected];
-        s.rotation = num(document.getElementById('fRot').value, 0);
-        document.getElementById('rotLabel').textContent = s.rotation + '°';
-        const el = stageEl.querySelector('.seat[data-idx="' + selected + '"] .seat-rot');
-        if (el) el.style.transform = 'rotate(' + s.rotation + 'deg)';
-        markDirty();
-        renderTable();
-    });
-
-    document.getElementById('fPerson').addEventListener('change', () => {
-        if (selected < 0) return;
-        const sel = document.getElementById('fPerson');
-        const s = seats[selected];
-        if (sel.value === '') {
-            s.personId = null;
-        } else {
-            s.personId = parseInt(sel.value, 10);
-            const p = PERSONS.find(x => x.id === s.personId);
-            if (p) s.personName = p.name;
-        }
-        markDirty();
-        render();
-        select(selected);
-    });
-
-    document.getElementById('personFilter').addEventListener('input', e => {
-        buildPersonOptions(e.target.value.trim());
-        const s = seats[selected];
-        if (s && s.personId != null) document.getElementById('fPerson').value = String(s.personId);
-    });
-
-    document.getElementById('btnFaceOne').addEventListener('click', () => {
-        if (selected < 0) return;
-        seats[selected].rotation = facingConductor(seats[selected]);
-        markDirty();
-        render();
-        select(selected);
-    });
-}
-
-function buildPersonOptions(filter) {
-    const sel = document.getElementById('fPerson');
-    const f = (filter || '').toLowerCase();
-    const list = f === '' ? PERSONS
-        : PERSONS.filter(p => (p.name + p.kana + p.inst).toLowerCase().indexOf(f) >= 0);
-    const html = ['<option value="">-- 未割り当て --</option>'];
-    list.slice(0, 500).forEach(p => {
-        html.push('<option value="' + p.id + '">' + esc(p.name) +
-                  (p.kana ? '（' + esc(p.kana) + '）' : '') +
-                  (p.inst ? ' [' + esc(p.inst) + ']' : '') + '</option>');
-    });
-    if (list.length > 500) html.push('<option value="" disabled>… 他 ' + (list.length - 500) + ' 件（絞り込んでください）</option>');
-    sel.innerHTML = html.join('');
-}
-
-// ---------------------------------------------------------
-// ツールバー
-// ---------------------------------------------------------
-function buildPartPresets() {
-    const sel = document.getElementById('addPart');
-    PART_PRESETS.forEach(([code, name]) => {
-        const o = document.createElement('option');
-        o.value = code;
-        o.textContent = name;
-        sel.appendChild(o);
-    });
-    sel.value = 'Vn1';
-}
-
-function bindToolbar() {
-    document.getElementById('btnAdd').addEventListener('click', () => {
-        const sel = document.getElementById('addPart');
-        const code = sel.value;
-        const name = sel.options[sel.selectedIndex].textContent;
-        const s = {
-            uid: uidSeq++, seatId: null,
-            roleType: code === 'Cond' ? 'CONDUCTOR' : 'PLAYER',
-            partCode: code, partName: code === '' ? '' : name,
-            pultNo: null, seatSide: '', personId: null, personName: '',
-            posX: Math.round(stageWidth() / 2), posY: Math.round(stageDepth() / 2),
-            rotation: 0, memo: ''
+        // パートごとの色（枠線, 背景）
+        const PART_STYLE = {
+            Cond: ['#dc3545', '#fdeef0'],
+            Vn1: ['#6f42c1', '#f3eeff'], Vn2: ['#6f42c1', '#f3eeff'],
+            Va: ['#5936a8', '#f3eeff'], Vc: ['#5936a8', '#f3eeff'], Cb: ['#45298a', '#f3eeff'],
+            Fl: ['#198754', '#e9f7f0'], Ob: ['#198754', '#e9f7f0'],
+            Cl: ['#198754', '#e9f7f0'], Fg: ['#198754', '#e9f7f0'],
+            Hr: ['#fd7e14', '#fff3e8'], Tp: ['#fd7e14', '#fff3e8'],
+            Tb: ['#e8590c', '#fff3e8'], Tu: ['#e8590c', '#fff3e8'],
+            Timp: ['#6c757d', '#f1f3f5'], Perc: ['#6c757d', '#f1f3f5'],
+            Hp: ['#0d6efd', '#e7f1ff'], Pf: ['#0d6efd', '#e7f1ff']
         };
-        s.rotation = facingConductor(s);
-        seats.push(s);
-        markDirty();
-        render();
-        select(seats.length - 1);
-    });
+        const DEFAULT_STYLE = ['#495057', '#f8f9fa'];
 
-    document.getElementById('btnDup').addEventListener('click', () => {
-        if (selected < 0) return;
-        const src = seats[selected];
-        const copy = Object.assign({}, src, {
-            uid: uidSeq++, seatId: null,
-            posX: clamp(src.posX + 60, 0, stageWidth()),
-            pultNo: src.pultNo ? src.pultNo + 1 : null
-        });
-        seats.splice(selected + 1, 0, copy);
-        markDirty();
-        render();
-        select(selected + 1);
-    });
+        // 「席を追加」のプルダウン
+        const PART_PRESETS = [
+            ['Cond', '指揮者'], ['Vn1', '1stヴァイオリン'], ['Vn2', '2ndヴァイオリン'],
+            ['Va', 'ヴィオラ'], ['Vc', 'チェロ'], ['Cb', 'コントラバス'],
+            ['Fl', 'フルート'], ['Ob', 'オーボエ'], ['Cl', 'クラリネット'], ['Fg', 'ファゴット'],
+            ['Hr', 'ホルン'], ['Tp', 'トランペット'], ['Tb', 'トロンボーン'], ['Tu', 'チューバ'],
+            ['Timp', 'ティンパニ'], ['Perc', '打楽器'], ['Hp', 'ハープ'], ['Pf', 'ピアノ'],
+            ['', 'その他']
+        ];
 
-    document.getElementById('btnDel').addEventListener('click', () => {
-        if (selected < 0) return;
-        if (!confirm('この座席を削除しますか？')) return;
-        seats.splice(selected, 1);
-        selected = -1;
-        markDirty();
-        render();
-        syncInspector();
-    });
+        const stageEl = document.getElementById('stage');
+        const stageWrap = document.getElementById('stageWrap');
+        const tableBody = document.getElementById('seatTableBody');
 
-    document.getElementById('btnFaceAll').addEventListener('click', () => {
-        const cond = seats.find(s => s.roleType === 'CONDUCTOR');
-        seats.forEach(s => { if (s !== cond) s.rotation = facingConductor(s); });
-        markDirty();
-        render();
-        select(selected);
-    });
+        let seats = [];
+        let selected = -1;   // seats 内のインデックス
+        let zoom = 1;
+        let dirty = false;
+        let uidSeq = 1;
 
-    document.getElementById('btnZoomIn').addEventListener('click', () => { zoom = Math.min(1.6, zoom + 0.1); updateZoomLabel(); render(); });
-    document.getElementById('btnZoomOut').addEventListener('click', () => { zoom = Math.max(0.3, zoom - 0.1); updateZoomLabel(); render(); });
+        // ---------------------------------------------------------
+        // 初期化
+        // ---------------------------------------------------------
+        function stageWidth() { return num(document.getElementById('stageWidth').value, 1200); }
+        function stageDepth() { return num(document.getElementById('stageDepth').value, 800); }
 
-    ['stageWidth', 'stageDepth'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => { markDirty(); fitZoom(); render(); });
-    });
-    ['layoutName', 'orchName', 'layoutMemo'].forEach(id => {
-        document.getElementById(id).addEventListener('input', markDirty);
-    });
+        function num(v, fallback) {
+            const n = parseInt(v, 10);
+            return isNaN(n) ? fallback : n;
+        }
 
-    document.getElementById('btnSave').addEventListener('click', save);
-}
+        function init() {
+            seats = (INIT_SEATS || []).map(s => ({
+                uid: uidSeq++,
+                seatId: s.seatId,
+                roleType: s.roleType || 'PLAYER',
+                partCode: s.partCode || '',
+                partName: s.partName || '',
+                pultNo: s.pultNo,
+                seatSide: s.seatSide || '',
+                personId: s.personId,
+                personName: s.personName || '',
+                posX: s.posX,
+                posY: s.posY,
+                rotation: s.rotation == null ? 0 : s.rotation,
+                memo: s.memo || ''
+            }));
 
-/** 指揮者（いなければ舞台手前中央）を向く角度 */
-function facingConductor(s) {
-    const cond = seats.find(x => x.roleType === 'CONDUCTOR' && x !== s);
-    const cx = cond ? cond.posX : Math.round(stageWidth() / 2);
-    const cy = cond ? cond.posY : Math.round(stageDepth() * 0.875);
-    const dx = cx - s.posX, dy = cy - s.posY;
-    if (dx === 0 && dy === 0) return s.rotation || 0;
-    const deg = Math.atan2(dx, -dy) * 180 / Math.PI;
-    return Math.round(((deg % 360) + 360) % 360);
-}
+            fitZoom();
+            if (EDITABLE) {
+                buildPartPresets();
+                buildPersonOptions('');
+                bindToolbar();
+                bindInspector();
+                window.addEventListener('beforeunload', e => {
+                    if (dirty) { e.preventDefault(); e.returnValue = ''; }
+                });
+            }
+            window.addEventListener('resize', () => { fitZoom(); render(); });
+            render();
+        }
 
-function markDirty() {
-    dirty = true;
-    const b = document.getElementById('dirtyBadge');
-    if (b) b.style.display = 'inline';
-}
+        /** 表示領域に収まる倍率を求める（最大等倍） */
+        function fitZoom() {
+            const avail = Math.max(320, stageWrap.clientWidth - 24);
+            zoom = Math.min(1, avail / stageWidth());
+            updateZoomLabel();
+        }
 
-// ---------------------------------------------------------
-// 保存
-// ---------------------------------------------------------
-function save() {
-    const btn = document.getElementById('btnSave');
-    btn.disabled = true;
-    const payload = {
-        layoutName: document.getElementById('layoutName').value,
-        orchName:   document.getElementById('orchName').value,
-        stageWidth: stageWidth(),
-        stageDepth: stageDepth(),
-        memo:       document.getElementById('layoutMemo').value,
-        seats: seats.map(s => ({
-            seatId:     s.seatId,
-            roleType:   s.roleType,
-            partCode:   s.partCode,
-            partName:   s.partName,
-            pultNo:     s.pultNo,
-            seatSide:   s.seatSide || null,
-            personId:   s.personId,
-            personName: s.personName,
-            posX:       s.posX,
-            posY:       s.posY,
-            rotation:   s.rotation,
-            memo:       s.memo
-        }))
-    };
+        function updateZoomLabel() {
+            const el = document.getElementById('zoomLabel');
+            if (el) el.textContent = Math.round(zoom * 100) + '%';
+        }
 
-    const headers = { 'Content-Type': 'application/json' };
-    const token  = document.querySelector('meta[name="_csrf"]').content;
-    const header = document.querySelector('meta[name="_csrf_header"]').content;
-    if (token && header) headers[header] = token;
+        // ---------------------------------------------------------
+        // 描画
+        // ---------------------------------------------------------
+        function render() {
+            const w = stageWidth(), d = stageDepth();
+            stageEl.style.width = (w * zoom) + 'px';
+            stageEl.style.height = (d * zoom) + 'px';
+            stageEl.style.backgroundSize = (50 * zoom) + 'px ' + (50 * zoom) + 'px';
 
-    fetch('/layout/' + LAYOUT_ID + '/save', {
-        method: 'POST', headers: headers, body: JSON.stringify(payload)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-    })
-    .then(data => {
-        // 採番された seatId を取り込む（サーバは送信順に seat_no を振り直して返す）
-        (data.seats || []).forEach((sv, i) => { if (seats[i]) seats[i].seatId = sv.seatId; });
-        document.getElementById('orchName').value = data.orchName || '';
-        dirty = false;
-        document.getElementById('dirtyBadge').style.display = 'none';
-        btn.textContent = '保存しました';
-        setTimeout(() => { btn.textContent = '保存'; }, 1500);
-    })
-    .catch(err => alert('保存に失敗しました: ' + err.message))
-    .finally(() => { btn.disabled = false; });
-}
+            stageEl.querySelectorAll('.seat').forEach(el => el.remove());
+            seats.forEach((s, i) => stageEl.appendChild(buildSeatEl(s, i)));
+            renderTable();
+        }
 
-init();
-/*]]>*/
-</script>
+        function buildSeatEl(s, idx) {
+            const [line, bg] = styleOf(s);
+            const el = document.createElement('div');
+            el.className = 'seat' + (idx === selected ? ' selected' : '') + (s.personName ? '' : ' unassigned');
+            el.dataset.idx = idx;
+            placeSeatEl(el, s);
+
+            const rot = document.createElement('div');
+            rot.className = 'seat-rot';
+            rot.style.transform = 'rotate(' + s.rotation + 'deg)';
+            const arrow = document.createElement('div');
+            arrow.className = 'seat-arrow';
+            arrow.style.borderBottomColor = line;
+            rot.appendChild(arrow);
+
+            const body = document.createElement('div');
+            body.className = 'seat-body';
+            body.style.borderColor = line;
+            body.style.background = bg;
+
+            // 人が割り当てられていれば丸の中に氏名、丸の下にパート名。
+            // 未割り当てなら丸の中にパートコードのみ（下には何も出さない）。
+            const main = document.createElement('span');
+            if (s.personName) {
+                main.className = 'name';
+                main.textContent = s.personName;
+                main.style.fontSize = nameFontSize(s.personName);
+            } else {
+                main.className = 'code';
+                main.textContent = s.roleType === 'CONDUCTOR' ? '指揮' : (s.partCode || '—');
+            }
+            body.appendChild(main);
+
+            const sub = pultLabel(s);
+            if (sub) {
+                const p = document.createElement('span');
+                p.className = 'pult';
+                p.textContent = sub;
+                body.appendChild(p);
+            }
+
+            el.appendChild(rot);
+            el.appendChild(body);
+
+            if (s.personName) {
+                const label = document.createElement('div');
+                label.className = 'seat-label';
+                label.textContent = partLabel(s);
+                el.appendChild(label);
+            }
+
+            if (EDITABLE) {
+                body.addEventListener('pointerdown', ev => startDrag(ev, idx, el, false));
+                arrow.addEventListener('pointerdown', ev => startDrag(ev, idx, el, true));
+            }
+            return el;
+        }
+
+        function placeSeatEl(el, s) {
+            el.style.left = (s.posX * zoom) + 'px';
+            el.style.top = (s.posY * zoom) + 'px';
+        }
+
+        function styleOf(s) {
+            if (s.roleType === 'CONDUCTOR') return PART_STYLE.Cond;
+            return PART_STYLE[s.partCode] || DEFAULT_STYLE;
+        }
+
+        function pultLabel(s) {
+            const side = s.seatSide === 'OUT' ? '表' : (s.seatSide === 'IN' ? '裏' : '');
+            if (s.pultNo) return s.pultNo + 'pult' + side;
+            return side;
+        }
+
+        /** 丸の下に出すパート表示。パート名が無ければコードで代用する */
+        function partLabel(s) {
+            if (s.roleType === 'CONDUCTOR') return s.partName || '指揮者';
+            return s.partName || s.partCode || '';
+        }
+
+        /** 氏名の長さに応じて丸の中の文字サイズを決める */
+        function nameFontSize(name) {
+            const len = (name || '').length;
+            if (len <= 4) return '11px';
+            if (len <= 6) return '9px';
+            return '8px';
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            seats.forEach((s, i) => {
+                const tr = document.createElement('tr');
+                if (i === selected) tr.className = 'on';
+                tr.innerHTML =
+                    '<td>' + (i + 1) + '</td>' +
+                    '<td>' + esc(s.roleType === 'CONDUCTOR' ? '指揮者' : (s.partName || s.partCode || '—')) + '</td>' +
+                    '<td>' + esc(pultLabel(s) || '-') + '</td>' +
+                    '<td>' + esc(s.personName || '（未定）') + '</td>' +
+                    '<td>' + s.posX + ', ' + s.posY + '</td>' +
+                    '<td>' + s.rotation + '°</td>';
+                tr.addEventListener('click', () => select(i));
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ---------------------------------------------------------
+        // ドラッグ（移動・回転）
+        // ---------------------------------------------------------
+        let drag = null;
+
+        function startDrag(ev, idx, el, rotating) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            select(idx);
+            const s = seats[idx];
+            const p = toStageCoords(ev);
+            drag = {
+                idx: idx, el: el, rotating: rotating,
+                offsetX: p.x - s.posX, offsetY: p.y - s.posY
+            };
+            el.classList.add('dragging');
+            el.setPointerCapture(ev.pointerId);
+            el.addEventListener('pointermove', onDragMove);
+            el.addEventListener('pointerup', onDragEnd);
+            el.addEventListener('pointercancel', onDragEnd);
+        }
+
+        function onDragMove(ev) {
+            if (!drag) return;
+            const s = seats[drag.idx];
+            const p = toStageCoords(ev);
+            if (drag.rotating) {
+                const dx = p.x - s.posX, dy = p.y - s.posY;
+                if (dx === 0 && dy === 0) return;
+                let deg = Math.atan2(dx, -dy) * 180 / Math.PI;
+                deg = Math.round(((deg % 360) + 360) % 360 / 5) * 5;
+                s.rotation = deg % 360;
+                drag.el.querySelector('.seat-rot').style.transform = 'rotate(' + s.rotation + 'deg)';
+            } else {
+                let x = p.x - drag.offsetX;
+                let y = p.y - drag.offsetY;
+                if (document.getElementById('snapGrid').checked) {
+                    x = Math.round(x / 10) * 10;
+                    y = Math.round(y / 10) * 10;
+                }
+                s.posX = clamp(Math.round(x), 0, stageWidth());
+                s.posY = clamp(Math.round(y), 0, stageDepth());
+                placeSeatEl(drag.el, s);
+            }
+            syncInspector();
+            markDirty();
+        }
+
+        function onDragEnd(ev) {
+            if (!drag) return;
+            drag.el.classList.remove('dragging');
+            drag.el.removeEventListener('pointermove', onDragMove);
+            drag.el.removeEventListener('pointerup', onDragEnd);
+            drag.el.removeEventListener('pointercancel', onDragEnd);
+            drag = null;
+            renderTable();
+        }
+
+        function toStageCoords(ev) {
+            const rect = stageEl.getBoundingClientRect();
+            return { x: (ev.clientX - rect.left) / zoom, y: (ev.clientY - rect.top) / zoom };
+        }
+
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        // ---------------------------------------------------------
+        // 選択とインスペクタ
+        // ---------------------------------------------------------
+        function select(idx) {
+            selected = idx;
+            stageEl.querySelectorAll('.seat').forEach(el => {
+                el.classList.toggle('selected', parseInt(el.dataset.idx, 10) === idx);
+            });
+            [...tableBody.rows].forEach((tr, i) => tr.classList.toggle('on', i === idx));
+            syncInspector();
+        }
+
+        function syncInspector() {
+            if (!EDITABLE) return;
+            const body = document.getElementById('inspBody');
+            const empty = document.getElementById('inspEmpty');
+            if (selected < 0 || !seats[selected]) {
+                body.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+            const s = seats[selected];
+            body.style.display = 'block';
+            empty.style.display = 'none';
+            document.getElementById('fRole').value = s.roleType;
+            document.getElementById('fPartCode').value = s.partCode;
+            document.getElementById('fPartName').value = s.partName;
+            document.getElementById('fPult').value = s.pultNo == null ? '' : s.pultNo;
+            document.getElementById('fSide').value = s.seatSide || '';
+            document.getElementById('fPerson').value = s.personId == null ? '' : String(s.personId);
+            document.getElementById('fPersonName').value = s.personName;
+            document.getElementById('fX').value = s.posX;
+            document.getElementById('fY').value = s.posY;
+            document.getElementById('fRot').value = s.rotation;
+            document.getElementById('rotLabel').textContent = s.rotation + '°';
+            document.getElementById('fMemo').value = s.memo;
+        }
+
+        function bindInspector() {
+            const apply = (id, fn) => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', () => {
+                    if (selected < 0) return;
+                    fn(seats[selected], el);
+                    markDirty();
+                    render();
+                    select(selected);
+                });
+            };
+            apply('fRole', (s, el) => s.roleType = el.value);
+            apply('fPartCode', (s, el) => s.partCode = el.value.trim());
+            apply('fPartName', (s, el) => s.partName = el.value.trim());
+            apply('fPult', (s, el) => s.pultNo = el.value === '' ? null : parseInt(el.value, 10));
+            apply('fSide', (s, el) => s.seatSide = el.value);
+            apply('fPersonName', (s, el) => s.personName = el.value.trim());
+            apply('fX', (s, el) => s.posX = clamp(num(el.value, s.posX), 0, stageWidth()));
+            apply('fY', (s, el) => s.posY = clamp(num(el.value, s.posY), 0, stageDepth()));
+            apply('fMemo', (s, el) => s.memo = el.value);
+
+            document.getElementById('fRot').addEventListener('input', () => {
+                if (selected < 0) return;
+                const s = seats[selected];
+                s.rotation = num(document.getElementById('fRot').value, 0);
+                document.getElementById('rotLabel').textContent = s.rotation + '°';
+                const el = stageEl.querySelector('.seat[data-idx="' + selected + '"] .seat-rot');
+                if (el) el.style.transform = 'rotate(' + s.rotation + 'deg)';
+                markDirty();
+                renderTable();
+            });
+
+            document.getElementById('fPerson').addEventListener('change', () => {
+                if (selected < 0) return;
+                const sel = document.getElementById('fPerson');
+                const s = seats[selected];
+                if (sel.value === '') {
+                    s.personId = null;
+                } else {
+                    s.personId = parseInt(sel.value, 10);
+                    const p = PERSONS.find(x => x.id === s.personId);
+                    if (p) s.personName = p.name;
+                }
+                markDirty();
+                render();
+                select(selected);
+            });
+
+            document.getElementById('personFilter').addEventListener('input', e => {
+                buildPersonOptions(e.target.value.trim());
+                const s = seats[selected];
+                if (s && s.personId != null) document.getElementById('fPerson').value = String(s.personId);
+            });
+
+            document.getElementById('btnFaceOne').addEventListener('click', () => {
+                if (selected < 0) return;
+                seats[selected].rotation = facingConductor(seats[selected]);
+                markDirty();
+                render();
+                select(selected);
+            });
+        }
+
+        function buildPersonOptions(filter) {
+            const sel = document.getElementById('fPerson');
+            const f = (filter || '').toLowerCase();
+            const list = f === '' ? PERSONS
+                : PERSONS.filter(p => (p.name + p.kana + p.inst).toLowerCase().indexOf(f) >= 0);
+            const html = ['<option value="">-- 未割り当て --</option>'];
+            list.slice(0, 500).forEach(p => {
+                html.push('<option value="' + p.id + '">' + esc(p.name) +
+                    (p.kana ? '（' + esc(p.kana) + '）' : '') +
+                    (p.inst ? ' [' + esc(p.inst) + ']' : '') + '</option>');
+            });
+            if (list.length > 500) html.push('<option value="" disabled>… 他 ' + (list.length - 500) + ' 件（絞り込んでください）</option>');
+            sel.innerHTML = html.join('');
+        }
+
+        // ---------------------------------------------------------
+        // ツールバー
+        // ---------------------------------------------------------
+        function buildPartPresets() {
+            const sel = document.getElementById('addPart');
+            PART_PRESETS.forEach(([code, name]) => {
+                const o = document.createElement('option');
+                o.value = code;
+                o.textContent = name;
+                sel.appendChild(o);
+            });
+            sel.value = 'Vn1';
+        }
+
+        function bindToolbar() {
+            document.getElementById('btnAdd').addEventListener('click', () => {
+                const sel = document.getElementById('addPart');
+                const code = sel.value;
+                const name = sel.options[sel.selectedIndex].textContent;
+                const s = {
+                    uid: uidSeq++, seatId: null,
+                    roleType: code === 'Cond' ? 'CONDUCTOR' : 'PLAYER',
+                    partCode: code, partName: code === '' ? '' : name,
+                    pultNo: null, seatSide: '', personId: null, personName: '',
+                    posX: Math.round(stageWidth() / 2), posY: Math.round(stageDepth() / 2),
+                    rotation: 0, memo: ''
+                };
+                s.rotation = facingConductor(s);
+                seats.push(s);
+                markDirty();
+                render();
+                select(seats.length - 1);
+            });
+
+            document.getElementById('btnDup').addEventListener('click', () => {
+                if (selected < 0) return;
+                const src = seats[selected];
+                const copy = Object.assign({}, src, {
+                    uid: uidSeq++, seatId: null,
+                    posX: clamp(src.posX + 60, 0, stageWidth()),
+                    pultNo: src.pultNo ? src.pultNo + 1 : null
+                });
+                seats.splice(selected + 1, 0, copy);
+                markDirty();
+                render();
+                select(selected + 1);
+            });
+
+            document.getElementById('btnDel').addEventListener('click', () => {
+                if (selected < 0) return;
+                if (!confirm('この座席を削除しますか？')) return;
+                seats.splice(selected, 1);
+                selected = -1;
+                markDirty();
+                render();
+                syncInspector();
+            });
+
+            document.getElementById('btnFaceAll').addEventListener('click', () => {
+                const cond = seats.find(s => s.roleType === 'CONDUCTOR');
+                seats.forEach(s => { if (s !== cond) s.rotation = facingConductor(s); });
+                markDirty();
+                render();
+                select(selected);
+            });
+
+            document.getElementById('btnZoomIn').addEventListener('click', () => { zoom = Math.min(1.6, zoom + 0.1); updateZoomLabel(); render(); });
+            document.getElementById('btnZoomOut').addEventListener('click', () => { zoom = Math.max(0.3, zoom - 0.1); updateZoomLabel(); render(); });
+
+            ['stageWidth', 'stageDepth'].forEach(id => {
+                document.getElementById(id).addEventListener('change', () => { markDirty(); fitZoom(); render(); });
+            });
+            ['layoutName', 'orchName', 'layoutMemo'].forEach(id => {
+                document.getElementById(id).addEventListener('input', markDirty);
+            });
+
+            document.getElementById('btnSave').addEventListener('click', save);
+        }
+
+        /** 指揮者（いなければ舞台手前中央）を向く角度 */
+        function facingConductor(s) {
+            const cond = seats.find(x => x.roleType === 'CONDUCTOR' && x !== s);
+            const cx = cond ? cond.posX : Math.round(stageWidth() / 2);
+            const cy = cond ? cond.posY : Math.round(stageDepth() * 0.875);
+            const dx = cx - s.posX, dy = cy - s.posY;
+            if (dx === 0 && dy === 0) return s.rotation || 0;
+            const deg = Math.atan2(dx, -dy) * 180 / Math.PI;
+            return Math.round(((deg % 360) + 360) % 360);
+        }
+
+        function markDirty() {
+            dirty = true;
+            const b = document.getElementById('dirtyBadge');
+            if (b) b.style.display = 'inline';
+        }
+
+        // ---------------------------------------------------------
+        // 保存
+        // ---------------------------------------------------------
+        function save() {
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            const payload = {
+                layoutName: document.getElementById('layoutName').value,
+                orchName: document.getElementById('orchName').value,
+                stageWidth: stageWidth(),
+                stageDepth: stageDepth(),
+                memo: document.getElementById('layoutMemo').value,
+                seats: seats.map(s => ({
+                    seatId: s.seatId,
+                    roleType: s.roleType,
+                    partCode: s.partCode,
+                    partName: s.partName,
+                    pultNo: s.pultNo,
+                    seatSide: s.seatSide || null,
+                    personId: s.personId,
+                    personName: s.personName,
+                    posX: s.posX,
+                    posY: s.posY,
+                    rotation: s.rotation,
+                    memo: s.memo
+                }))
+            };
+
+            const headers = { 'Content-Type': 'application/json' };
+            const token = document.querySelector('meta[name="_csrf"]').content;
+            const header = document.querySelector('meta[name="_csrf_header"]').content;
+            if (token && header) headers[header] = token;
+
+            fetch('/web/layout/' + LAYOUT_ID + '/save', {
+                method: 'POST', headers: headers, body: JSON.stringify(payload)
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    // 採番された seatId を取り込む（サーバは送信順に seat_no を振り直して返す）
+                    (data.seats || []).forEach((sv, i) => { if (seats[i]) seats[i].seatId = sv.seatId; });
+                    document.getElementById('orchName').value = data.orchName || '';
+                    dirty = false;
+                    document.getElementById('dirtyBadge').style.display = 'none';
+                    btn.textContent = '保存しました';
+                    setTimeout(() => { btn.textContent = '保存'; }, 1500);
+                })
+                .catch(err => alert('保存に失敗しました: ' + err.message))
+                .finally(() => { btn.disabled = false; });
+        }
+
+        init();
+        /*]]>*/
+    </script>
 </body>
+
 </html>

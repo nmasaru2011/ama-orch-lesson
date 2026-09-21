@@ -9,7 +9,7 @@
 ## 技術スタック
 
 - **Java**: 21
-- **Spring Boot**: 3.1.12
+- **Spring Boot**: 4.1.1
 - **Web Framework**: Spring MVC + Thymeleaf
 - **ビルドツール**: Maven
 - **その他**:

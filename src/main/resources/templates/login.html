@@ -102,7 +102,7 @@
         <div th:if="${param.registered}" class="success">
             ユーザー登録が完了しました。ログインしてください
         </div>
-        <form th:action="@{/login}" method="post">
+        <form th:action="@{/web/login}" method="post">
             <div class="form-group">
                 <label for="username">ユーザー名:</label>
                 <input type="text" id="username" name="username" required autofocus>
@@ -114,7 +114,7 @@
             <button type="submit">ログイン</button>
         </form>
         <div class="register-link">
-            <a th:href="@{/register}">新規ユーザー登録</a>
+            <a th:href="@{/web/register}">新規ユーザー登録</a>
         </div>
     </div>
 </body>

@@ -37,9 +37,15 @@ public class StageLayout extends AuditableEntity {
     @Column(name = "stage_depth", nullable = false)
     private Integer stageDepth = 800;
 
+    /** 団体名。未入力の場合は紐づく演奏会の団体名を登録する */
+    @Column(name = "orch_name", length = 64)
+    private String orchName;
+
     @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
+    public String getOrchName() { return orchName; }
+    public void setOrchName(String orchName) { this.orchName = orchName; }
 
     public Long getLayoutId() { return layoutId; }
     public void setLayoutId(Long layoutId) { this.layoutId = layoutId; }

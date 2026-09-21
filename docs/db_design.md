@@ -324,9 +324,10 @@ concert_program.layout_id から参照される。1つの配置を複数の曲�
 |---|---|---|---|---|---|---|---|---|
 | 1 | layout_id | 配置ID | 数値型（整数） | BIGINT | INTEGER | 不可 | PK | 自動採番 |
 | 2 | layout_name | 配置名 | 文字列型 | VARCHAR(64) | TEXT | 不可 |  |  |
-| 3 | stage_width | 舞台幅 | 数値型（整数） | INT | INTEGER | 不可 |  |  |
-| 4 | stage_depth | 舞台奥行 | 数値型（整数） | INT | INTEGER | 不可 |  |  |
-| 5 | memo | メモ | 文字列型（長文） | TEXT | TEXT | 可 |  |  |
+| 3 | orch_name | 団体名 | 文字列型 | VARCHAR(64) | TEXT | 可 |  | 未入力時は紐づく演奏会の団体名を登録 |
+| 4 | stage_width | 舞台幅 | 数値型（整数） | INT | INTEGER | 不可 |  |  |
+| 5 | stage_depth | 舞台奥行 | 数値型（整数） | INT | INTEGER | 不可 |  |  |
+| 6 | memo | メモ | 文字列型（長文） | TEXT | TEXT | 可 |  |  |
 
 ### 4.10 stage_layout_seat（舞台配置の座席）
 

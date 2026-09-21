@@ -35,7 +35,7 @@
         .search-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
                       background: #f0ebff; padding: 12px 16px; border-radius: 6px; margin-bottom: 14px; }
         .search-bar label { font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
-        .search-bar select, .search-bar input[type=number] {
+        .search-bar select, .search-bar input[type=number], .search-bar input[type=text] {
             padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; }
         .btn-search { background-color: #6f42c1; color: white; padding: 7px 16px;
                       border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
@@ -69,6 +69,11 @@
             </select>
         </div>
         <div>
+            <label for="searchConcertId">演奏会ID（部分一致）</label>
+            <input type="text" id="searchConcertId" name="concertId"
+                   th:value="${selectedConcertId}" placeholder="例: 2023" style="width:140px;">
+        </div>
+        <div>
             <label for="searchYear">演奏会年</label>
             <input type="number" id="searchYear" name="year" min="1900" max="2099"
                    th:value="${selectedYear}" placeholder="例: 2023" style="width:100px;">
@@ -91,7 +96,7 @@
 
     <div class="music-filter-badge" th:if="${selectedMusicId}">
         絞り込み中の曲: <strong id="selectedMusicLabel" th:text="${selectedMusicId}"></strong>
-        <a th:href="@{/concert(orchId=${selectedOrchId}, year=${selectedYear})}">✕ 曲の絞り込みを解除</a>
+        <a th:href="@{/concert(orchId=${selectedOrchId}, concertId=${selectedConcertId}, year=${selectedYear})}">✕ 曲の絞り込みを解除</a>
     </div>
 
     <div class="toolbar">
@@ -161,14 +166,14 @@
 
     <div class="pagination" th:if="${concertPage.totalPages > 1}">
         <a th:if="${!concertPage.first}"
-           th:href="@{/concert(page=${concertPage.number - 1}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
+           th:href="@{/concert(page=${concertPage.number - 1}, orchId=${selectedOrchId}, concertId=${selectedConcertId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            class="page-btn">‹ 前</a>
         <a th:each="i : ${#numbers.sequence(0, concertPage.totalPages - 1)}"
-           th:href="@{/concert(page=${i}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
+           th:href="@{/concert(page=${i}, orchId=${selectedOrchId}, concertId=${selectedConcertId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            th:text="${i + 1}"
            th:class="${i == concertPage.number} ? 'page-btn active' : 'page-btn'"></a>
         <a th:if="${!concertPage.last}"
-           th:href="@{/concert(page=${concertPage.number + 1}, orchId=${selectedOrchId}, year=${selectedYear}, musicId=${selectedMusicId})}"
+           th:href="@{/concert(page=${concertPage.number + 1}, orchId=${selectedOrchId}, concertId=${selectedConcertId}, year=${selectedYear}, musicId=${selectedMusicId})}"
            class="page-btn">次 ›</a>
     </div>
 </div>

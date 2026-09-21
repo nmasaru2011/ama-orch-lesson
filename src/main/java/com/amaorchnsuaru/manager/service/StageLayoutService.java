@@ -2,6 +2,7 @@ package com.amaorchnsuaru.manager.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amaorchnsuaru.manager.entity.ConcertProgram;
+import com.amaorchnsuaru.manager.entity.OrchData;
 import com.amaorchnsuaru.manager.entity.StageLayout;
 import com.amaorchnsuaru.manager.entity.StageLayoutSeat;
+import com.amaorchnsuaru.manager.repository.ConcertDataRepository;
 import com.amaorchnsuaru.manager.repository.ConcertProgramRepository;
+import com.amaorchnsuaru.manager.repository.OrchDataRepository;
 import com.amaorchnsuaru.manager.repository.StageLayoutRepository;
 import com.amaorchnsuaru.manager.repository.StageLayoutSeatRepository;
 
@@ -42,12 +46,46 @@ public class StageLayoutService {
     private final StageLayoutSeatRepository seatRepo;
     private final ConcertProgramRepository  programRepo;
 
+    private final ConcertDataRepository     concertRepo;
+    private final OrchDataRepository        orchRepo;
+
     public StageLayoutService(StageLayoutRepository layoutRepo,
                               StageLayoutSeatRepository seatRepo,
-                              ConcertProgramRepository programRepo) {
+                              ConcertProgramRepository programRepo,
+                              ConcertDataRepository concertRepo,
+                              OrchDataRepository orchRepo) {
         this.layoutRepo  = layoutRepo;
         this.seatRepo    = seatRepo;
         this.programRepo = programRepo;
+        this.concertRepo = concertRepo;
+        this.orchRepo    = orchRepo;
+    }
+
+    /** 演奏会の団体名（団体マスタ）を返す。見つからなければ null */
+    public String orchNameOfConcert(String concertId) {
+        return concertRepo.findById(concertId)
+                .flatMap(c -> orchRepo.findById(c.getOrchId()))
+                .map(OrchData::getOrchName)
+                .orElse(null);
+    }
+
+    /** この配置を使っている最初の曲の演奏会の団体名。使われていなければ null */
+    public String orchNameFromUsage(Long layoutId) {
+        return programRepo.findByLayoutId(layoutId).stream()
+                .sorted(Comparator.comparing(ConcertProgram::getConcertId)
+                        .thenComparing(ConcertProgram::getProgramNo))
+                .map(p -> orchNameOfConcert(p.getConcertId()))
+                .filter(n -> n != null && !n.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** 団体名が未入力なら、演奏会の団体名を登録する（呼び出し側のトランザクション内で使う） */
+    public void fillOrchNameIfBlank(StageLayout layout, String concertId) {
+        if (layout.getOrchName() == null || layout.getOrchName().isBlank()) {
+            layout.setOrchName(trimOrNull(orchNameOfConcert(concertId), 64));
+            layoutRepo.save(layout);
+        }
     }
 
     // =========================================================
@@ -226,6 +264,7 @@ public class StageLayoutService {
         StageLayout src = require(layoutId);
         StageLayout copy = new StageLayout();
         copy.setLayoutName(trim(src.getLayoutName() + " のコピー", 64, "配置のコピー"));
+        copy.setOrchName(src.getOrchName());
         copy.setStageWidth(src.getStageWidth());
         copy.setStageDepth(src.getStageDepth());
         copy.setMemo(src.getMemo());
@@ -275,7 +314,7 @@ public class StageLayoutService {
                            Integer posX, Integer posY, Integer rotation, String memo) {}
 
     /** 画面から送られてくる配置全体のデータ */
-    public record LayoutForm(String layoutName, Integer stageWidth, Integer stageDepth,
+    public record LayoutForm(String layoutName, String orchName, Integer stageWidth, Integer stageDepth,
                              String memo, List<SeatForm> seats) {}
 
     /**
@@ -294,6 +333,9 @@ public class StageLayoutService {
         if (form.stageDepth() != null) {
             layout.setStageDepth(clamp(form.stageDepth(), 300, 4000));
         }
+        // 未入力なら紐づく演奏会の団体名を登録する
+        String orchName = trimOrNull(form.orchName(), 64);
+        layout.setOrchName(orchName != null ? orchName : trimOrNull(orchNameFromUsage(layoutId), 64));
         layout.setMemo(blankToNull(form.memo()));
         layoutRepo.save(layout);
 

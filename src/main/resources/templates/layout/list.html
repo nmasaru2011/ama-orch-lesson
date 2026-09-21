@@ -42,6 +42,7 @@
             <tr>
                 <th style="width:70px;">配置ID</th>
                 <th>配置名</th>
+                <th style="width:160px;">団体名</th>
                 <th style="width:70px;">席数</th>
                 <th>使用している曲</th>
                 <th style="width:260px;"></th>
@@ -55,6 +56,7 @@
                        style="color:#6f42c1; font-weight:bold;"></a>
                     <div class="usage" th:if="${l.memo}" th:text="${l.memo}"></div>
                 </td>
+                <td th:text="${l.orchName}"></td>
                 <td th:text="${seatCounts[l.layoutId]}"></td>
                 <td>
                     <span class="usage" th:if="${#lists.isEmpty(usages[l.layoutId])}">（未使用）</span>

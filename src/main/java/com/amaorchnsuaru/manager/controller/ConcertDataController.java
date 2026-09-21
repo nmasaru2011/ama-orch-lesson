@@ -64,19 +64,22 @@ public class ConcertDataController {
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page,
                        @RequestParam(required = false) String orchId,
+                       @RequestParam(required = false) String concertId,
                        @RequestParam(required = false) String year,
                        @RequestParam(required = false) String musicId,
                        Model model) {
         String orchIdFilter  = (orchId != null && !orchId.isBlank())   ? orchId  : null;
+        String concertIdFilter = (concertId != null && !concertId.isBlank()) ? concertId.trim() : null;
         String yearFilter    = (year   != null && !year.isBlank())     ? year    : null;
         String musicIdFilter = (musicId != null && !musicId.isBlank()) ? musicId : null;
         Page<ConcertData> concertPage = concertRepo
-                .findByFilters(orchIdFilter, yearFilter, musicIdFilter, PageRequest.of(page, PAGE_SIZE));
+                .findByFilters(orchIdFilter, concertIdFilter, yearFilter, musicIdFilter, PageRequest.of(page, PAGE_SIZE));
         model.addAttribute("concertPage", concertPage);
         model.addAttribute("orchNameMap", buildOrchNameMap());
         model.addAttribute("orchList", orchRepo.findAllByOrderByOrchIdAsc());
         model.addAttribute("musicList", musicRepo.findAllByOrderByComposerNameAscMusicTitleFormalJpAsc());
         model.addAttribute("selectedOrchId", orchIdFilter);
+        model.addAttribute("selectedConcertId", concertIdFilter);
         model.addAttribute("selectedYear", yearFilter);
         model.addAttribute("selectedMusicId", musicIdFilter);
         return "concert/list";
@@ -197,6 +200,10 @@ public class ConcertDataController {
         programRepo.findById(new ConcertProgramId(id, programNo)).ifPresent(prog -> {
             prog.setLayoutId(layoutId != null && layoutRepo.existsById(layoutId) ? layoutId : null);
             programRepo.save(prog);
+            if (prog.getLayoutId() != null) {
+                layoutRepo.findById(prog.getLayoutId())
+                        .ifPresent(l -> layoutService.fillOrchNameIfBlank(l, id));
+            }
         });
         return "redirect:/concert/" + id + "/edit";
     }
@@ -215,6 +222,7 @@ public class ConcertDataController {
         StageLayout layout = layoutService.create(prog.getMusicTitleFormalJp() + " の配置", true);
         prog.setLayoutId(layout.getLayoutId());
         programRepo.save(prog);
+        layoutService.fillOrchNameIfBlank(layout, id);
         return "redirect:/layout/" + layout.getLayoutId() + "/edit";
     }
 

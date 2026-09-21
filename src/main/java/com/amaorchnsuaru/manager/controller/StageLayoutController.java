@@ -127,6 +127,7 @@ public class StageLayoutController {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("layoutId", layout.getLayoutId());
         body.put("layoutName", layout.getLayoutName());
+        body.put("orchName", layout.getOrchName());
         body.put("seatCount", seats.size());
         body.put("seats", seats);
         return ResponseEntity.ok(body);

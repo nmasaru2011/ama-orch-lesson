@@ -6,11 +6,53 @@
     "configurations": [
         {
             "type": "java",
-            "name": "LessonApplication",
+            "name": "LessonApplication (H2 開発)",
             "request": "launch",
             "console": "integratedTerminal",
             "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
-            "projectName": "manager"
+            "projectName": "manager",
+            "classPaths": [
+                "${workspaceFolder}/ama-orch-web/target/classes",
+                "${workspaceFolder}/ama-orch-web/target/dependency/*"
+            ],
+            "modulePaths": [],
+            "preLaunchTask": "ama-orch-web: Prepare Spring Boot debug",
+            "envFile": "${workspaceFolder}/ama-orch-web/.env"
+        },
+        {
+            "type": "java",
+            "name": "LessonApplication (PostgreSQL テスト)",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
+            "projectName": "manager",
+            "classPaths": [
+                "${workspaceFolder}/ama-orch-web/target/classes",
+                "${workspaceFolder}/ama-orch-web/target/dependency/*"
+            ],
+            "modulePaths": [],
+            "preLaunchTask": "ama-orch-web: Prepare Spring Boot debug",
+            "envFile": "${workspaceFolder}/ama-orch-web/.env.postgres"
+        },
+        {
+            "type": "node",
+            "name": "ama-orch データエディター（Electron）",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/ama-orch-data-editor",
+            "runtimeExecutable": "${workspaceFolder}/ama-orch-data-editor/node_modules/electron/dist/electron.exe",
+            "runtimeArgs": [
+                "--inspect=5858",
+                "${workspaceFolder}/ama-orch-data-editor"
+            ],
+            "env": {
+                "VITE_DEV_SERVER_URL": "http://127.0.0.1:5173"
+            },
+            "preLaunchTask": "ama-orch: Start Vite (Electron)",
+            "console": "integratedTerminal",
+            "sourceMaps": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
         }
     ]
 }

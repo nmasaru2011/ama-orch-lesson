@@ -25,7 +25,7 @@ jobs:
       - name: Extract version from pom.xml
         id: version
         run: |
-          CURRENT_VERSION=$(grep -m1 '<version>' pom.xml | grep -oP '\d+\.\d+\.\d+-SNAPSHOT' || true)
+          CURRENT_VERSION=$(grep -m1 '<version>' ama-orch-web/pom.xml | grep -oP '\d+\.\d+\.\d+-SNAPSHOT' || true)
           if [ -z "$CURRENT_VERSION" ]; then
             echo "::error::pom.xml does not contain a -SNAPSHOT version in the project version"
             exit 1
@@ -52,9 +52,9 @@ jobs:
           git checkout -B "$RELEASE_BRANCH"
 
           # Update pom.xml version (remove -SNAPSHOT)
-          sed -i "s|<version>${{ steps.version.outputs.current }}</version>|<version>${{ steps.version.outputs.release }}</version>|" pom.xml
+          sed -i "s|<version>${{ steps.version.outputs.current }}</version>|<version>${{ steps.version.outputs.release }}</version>|" ama-orch-web/pom.xml
 
-          git add pom.xml
+          git add ama-orch-web/pom.xml
           git commit -m "release: v${{ steps.version.outputs.release }}"
           git push -u origin "$RELEASE_BRANCH" --force
 
@@ -86,9 +86,9 @@ jobs:
           git checkout -B "$NEXT_BRANCH" main
 
           # Update pom.xml to next SNAPSHOT version
-          sed -i "s|<version>${{ steps.version.outputs.release }}</version>|<version>${{ steps.version.outputs.next_snapshot }}</version>|" pom.xml
+          sed -i "s|<version>${{ steps.version.outputs.release }}</version>|<version>${{ steps.version.outputs.next_snapshot }}</version>|" ama-orch-web/pom.xml
 
-          git add pom.xml
+          git add ama-orch-web/pom.xml
           git commit -m "prepare next development iteration: v${{ steps.version.outputs.next_snapshot }}"
           git push -u origin "$NEXT_BRANCH" --force
 

@@ -14,7 +14,24 @@
     "terminal.integrated.profiles.windows": {
         "PowerShell": {
             "source": "PowerShell",
-            "args": ["-NoExit", "-Command", "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8"]
+            "args": [
+                "-NoExit",
+                "-Command",
+                "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8"
+            ]
         }
+    },
+    "chat.tools.terminal.autoApprove": {
+        "/^Get-ChildItem -Force; Write-Output '--- package tools ---'; node --version; npm --version; Write-Output '--- setup skill ---'; Get-Content 'C:\\\\Users\\\\nmasa\\\\AppData\\\\Local\\\\Programs\\\\Microsoft VS Code\\\\7debcd0e2a\\\\resources\\\\app\\\\extensions\\\\copilot\\\\assets\\\\prompts\\\\skills\\\\project-setup-info-local\\\\SKILL\\.md' -TotalCount 220$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "Push-Location": true,
+        "Pop-Location": true,
+        "npx vite": true,
+        "npm run typecheck": true,
+        "npm run build": true,
+        "npm run dev": true,
+        "mvn -q -DskipTests compile": true
     }
 }

@@ -1,2 +1,13 @@
 target
+**/node_modules/
+**/dist/
+**/src-tauri/target/
 /src/test/resorces/*合奏*
+.env
+.env.postgres
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+.claude/settings.local.json
+.work
+**/src/main/resources/data_local.sql

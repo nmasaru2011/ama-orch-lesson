@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>練習まとめツール</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+        }
+
+        .menu-list li {
+            margin-bottom: 15px;
+        }
+
+        .menu-link {
+            display: block;
+            padding: 15px 20px;
+            background-color: #e3f2fd;
+            border-radius: 6px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .menu-link:hover {
+            background-color: #bbdefb;
+            text-decoration: none;
+        }
+
+        .menu-link .description {
+            display: block;
+            font-size: 14px;
+            font-weight: normal;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>練習まとめツール</h1>
+
+        <ul class="menu-list">
+            <li>
+                <a href="/web/rehearsal" class="menu-link">
+                    Youtubeオケ練習録音文字起こし
+                    <span class="description">YouTubeの字幕（自動取得またはSRTファイル）を分析して、練習中の指摘内容を抽出・整理します</span>
+                </a>
+            </li>
+            <li sec:authorize="hasRole('ADMIN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+                <a href="/web/person" class="menu-link">
+                    人物マスタ管理
+                    <span class="description">人物データの一覧表示・検索・新規登録・編集・削除（CRUD）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/web/concert" class="menu-link">
+                    演奏会データ管理
+                    <span class="description">演奏会の一覧表示・新規登録・編集・削除（書き込みは管理者のみ）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/web/layout" class="menu-link">
+                    舞台配置エディタ
+                    <span class="description">演奏会の曲ごとに、指揮者・パート・プルト（表／裏）の立ち位置と向きを舞台図の上で編集します</span>
+                </a>
+            </li>
+            <li>
+                <a href="/web/lesson" class="menu-link">
+                    練習データ管理
+                    <span class="description">練習日程・場所・内容の一覧表示・新規登録・編集・削除（演奏会・オーケストラ・年・時期で絞り込み）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/web/orch" class="menu-link">
+                    オーケストラ団体マスタ管理
+                    <span class="description">オーケストラ団体の一覧表示・新規登録・編集・削除（CRUD）</span>
+                </a>
+            </li>
+            <li>
+                <a href="/web/license" class="menu-link">
+                    使用OSSライセンス情報
+                    <span class="description">本アプリケーションで使用しているオープンソースソフトウェアのライセンス一覧</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+
+</html>

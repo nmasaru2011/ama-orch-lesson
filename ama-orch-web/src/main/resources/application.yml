@@ -1,0 +1,49 @@
+server:
+    port: ${PORT:8081}
+spring:
+  application:
+    name: LessonApplication
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+  datasource:
+    url: jdbc:h2:mem:lessondb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    defer-datasource-initialization: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+
+logging:
+  level:
+    "[org.apache.commons.compress]": DEBUG
+
+app:
+  version: '@project.version@'
+  concert-filter-months: 4
+
+# AI API キー（環境変数 OPENAI_API_KEY / ANTHROPIC_API_KEY で設定してください）
+openai:
+  api-key: ${OPENAI_API_KEY:}
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+
+# YouTube API接続設定（Renderなどのサーバー環境対応）
+youtube:
+  # リトライ回数
+  max-retries: 3
+  # 初期リトライ待機時間（ミリ秒）
+  retry-delay-ms: 1000

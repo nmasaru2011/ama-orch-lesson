@@ -1,0 +1,239 @@
+package com.amaorchnsuaru.manager.lesson.controller;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import tools.jackson.databind.ObjectMapper;
+import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
+import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService;
+import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService.AiProvider;
+import com.amaorchnsuaru.manager.lesson.service.RehearsalSrtService;
+import com.amaorchnsuaru.manager.lesson.service.RehearsalAnalysisDataService;
+import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionException;
+import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionService;
+
+import jakarta.servlet.http.HttpSession;
+
+@Controller
+@RequestMapping("/web/rehearsal")
+public class RehearsalController {
+
+	@Autowired
+	private RehearsalSrtService rehearsalSrtService;
+
+	@Autowired
+	private YouTubeCaptionService youTubeCaptionService;
+
+	@Autowired
+	private AiAnalysisService aiAnalysisService;
+
+	@Autowired
+	private RehearsalAnalysisDataService rehearsalAnalysisDataService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
+	@GetMapping
+	public String form() {
+		return "rehearsal/form";
+	}
+
+	@PostMapping("/analyze")
+	public String analyze(@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "youtubeUrl", required = false) String youtubeUrl,
+			@RequestParam(value = "analysisMode", defaultValue = "standard") String analysisMode,
+			@RequestParam(value = "aiProvider", defaultValue = "anthropic") String aiProvider,
+			@RequestParam(value = "lessonId", required = false) Long lessonId,
+			@RequestParam(value = "concertId", required = false) String concertId,
+			@RequestParam(value = "branchNo", required = false) Integer branchNo,
+			@RequestParam(value = "lessonDate", required = false) LocalDate lessonDate, Model model,
+			HttpSession session, RedirectAttributes redirectAttributes) {
+
+		boolean hasUrl = youtubeUrl != null && !youtubeUrl.isBlank();
+
+		if (file != null && !file.isEmpty()) {
+			String filename = file.getOriginalFilename();
+			if (filename == null || !filename.toLowerCase().endsWith(".srt")) {
+				redirectAttributes.addFlashAttribute("error", "SRTファイル (.srt) を選択してください");
+				return "redirect:/web/rehearsal";
+			}
+		} else if (!hasUrl) {
+			redirectAttributes.addFlashAttribute("error", "SRTファイルまたはYouTube URLのいずれかを指定してください");
+			return "redirect:/web/rehearsal";
+		}
+
+		try {
+			String srtContent;
+			if (file != null && !file.isEmpty()) {
+				srtContent =
+						new String(file.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+			} else {
+				srtContent = youTubeCaptionService.fetchCaptionAsSrt(youtubeUrl);
+			}
+
+			List<RehearsalInstruction> instructions;
+			if ("ai".equals(analysisMode)) {
+				AiProvider provider = "openai".equalsIgnoreCase(aiProvider) ? AiProvider.OPENAI
+						: AiProvider.ANTHROPIC;
+				instructions = aiAnalysisService.analyzeWithAi(srtContent, provider);
+				// AI解析ではYouTubeリンクが含まれないため補完する
+				if (hasUrl) {
+					String videoId = extractVideoId(youtubeUrl);
+					for (RehearsalInstruction inst : instructions) {
+						if (inst.getYoutubeLink() == null && videoId != null) {
+							inst.setYoutubeLink("https://www.youtube.com/watch?v=" + videoId + "&t="
+									+ inst.getTotalSeconds() + "s");
+						}
+					}
+				}
+			} else {
+				InputStream srtInputStream =
+						new ByteArrayInputStream(srtContent.getBytes(StandardCharsets.UTF_8));
+				instructions = rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
+			}
+
+			rehearsalAnalysisDataService.save(rehearsalAnalysisDataService.hash(srtContent),
+					instructions, lessonId, concertId, branchNo, lessonDate);
+
+			Map<String, Integer> instrumentSummary =
+					rehearsalSrtService.countByInstrument(instructions);
+
+			model.addAttribute("instructions", instructions);
+			model.addAttribute("instrumentSummary", instrumentSummary);
+			model.addAttribute("totalCount", instructions.size());
+			model.addAttribute("youtubeUrl", youtubeUrl);
+
+			session.setAttribute("rehearsalInstructions", instructions);
+
+			return "rehearsal/form";
+
+		} catch (IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/web/rehearsal";
+		} catch (YouTubeCaptionException e) {
+			redirectAttributes.addFlashAttribute("error", "YouTube字幕の取得に失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
+		} catch (IOException e) {
+			redirectAttributes.addFlashAttribute("error", "ファイルの読み込みに失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "AI解析に失敗しました: " + e.getMessage());
+			return "redirect:/web/rehearsal";
+		}
+	}
+
+	private String extractVideoId(String youtubeUrl) {
+		if (youtubeUrl == null || youtubeUrl.isBlank())
+			return null;
+		java.util.regex.Matcher m1 =
+				java.util.regex.Pattern.compile("[?&]v=([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
+		if (m1.find())
+			return m1.group(1);
+		java.util.regex.Matcher m2 = java.util.regex.Pattern
+				.compile("youtu\\.be/([a-zA-Z0-9_-]{11})").matcher(youtubeUrl);
+		if (m2.find())
+			return m2.group(1);
+		return null;
+	}
+
+	@GetMapping("/download/json")
+	public ResponseEntity<byte[]> downloadJson(HttpSession session) throws Exception {
+		@SuppressWarnings("unchecked")
+		List<RehearsalInstruction> instructions =
+				(List<RehearsalInstruction>) session.getAttribute("rehearsalInstructions");
+
+		if (instructions == null) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		byte[] jsonBytes =
+				objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(instructions);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setContentDispositionFormData("attachment", "rehearsal_summary.json");
+
+		return ResponseEntity.ok().headers(headers).body(jsonBytes);
+	}
+
+	@GetMapping("/download/csv")
+	public ResponseEntity<byte[]> downloadCsv(HttpSession session) {
+		@SuppressWarnings("unchecked")
+		List<RehearsalInstruction> instructions =
+				(List<RehearsalInstruction>) session.getAttribute("rehearsalInstructions");
+
+		if (instructions == null) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		String csv = rehearsalSrtService.toCsv(instructions);
+		byte[] csvBytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(
+				new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8));
+		headers.setContentDispositionFormData("attachment", "rehearsal_summary.csv");
+
+		return ResponseEntity.ok().headers(headers).body(csvBytes);
+	}
+
+	@GetMapping("/download/excel")
+	public ResponseEntity<byte[]> downloadExcel(HttpSession session) throws IOException {
+		@SuppressWarnings("unchecked")
+		List<RehearsalInstruction> instructions =
+				(List<RehearsalInstruction>) session.getAttribute("rehearsalInstructions");
+
+		if (instructions == null) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		rehearsalSrtService.toExcel(instructions, baos);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.parseMediaType(
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+		headers.setContentDispositionFormData("attachment", "rehearsal_summary.xlsx");
+
+		return ResponseEntity.ok().headers(headers).body(baos.toByteArray());
+	}
+
+	@GetMapping("/download/pdf")
+	public ResponseEntity<byte[]> downloadPdf(HttpSession session) throws Exception {
+		@SuppressWarnings("unchecked")
+		List<RehearsalInstruction> instructions =
+				(List<RehearsalInstruction>) session.getAttribute("rehearsalInstructions");
+
+		if (instructions == null) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		rehearsalSrtService.toPdf(instructions, baos);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDispositionFormData("attachment", "rehearsal_summary.pdf");
+
+		return ResponseEntity.ok().headers(headers).body(baos.toByteArray());
+	}
+}

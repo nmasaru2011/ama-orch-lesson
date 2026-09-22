@@ -11,6 +11,12 @@
             "console": "integratedTerminal",
             "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
             "projectName": "manager",
+            "classPaths": [
+                "${workspaceFolder}/ama-orch-web/target/classes",
+                "${workspaceFolder}/ama-orch-web/target/dependency/*"
+            ],
+            "modulePaths": [],
+            "preLaunchTask": "ama-orch-web: Prepare Spring Boot debug",
             "envFile": "${workspaceFolder}/ama-orch-web/.env"
         },
         {
@@ -20,6 +26,12 @@
             "console": "integratedTerminal",
             "mainClass": "com.amaorchnsuaru.manager.lesson.LessonApplication",
             "projectName": "manager",
+            "classPaths": [
+                "${workspaceFolder}/ama-orch-web/target/classes",
+                "${workspaceFolder}/ama-orch-web/target/dependency/*"
+            ],
+            "modulePaths": [],
+            "preLaunchTask": "ama-orch-web: Prepare Spring Boot debug",
             "envFile": "${workspaceFolder}/ama-orch-web/.env.postgres"
         },
         {

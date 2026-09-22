@@ -2,6 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "ama-orch-web: Prepare Spring Boot debug",
+            "type": "shell",
+            "command": "mvn -q -DskipTests compile dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/dependency",
+            "options": {
+                "cwd": "${workspaceFolder}/ama-orch-web"
+            },
+            "problemMatcher": "$maven"
+        },
+        {
             "label": "ama-orch: Compile Electron",
             "type": "shell",
             "command": "npx tsc",

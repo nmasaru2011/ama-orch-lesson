@@ -6,9 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.amaorchnsuaru.manager.entity.AppUser;
 
-public interface AppUserRepository extends JpaRepository<AppUser, Long> {
+public interface AppUserRepository extends JpaRepository<AppUser, String> {
 
-	Optional<AppUser> findByUsername(String username);
+	Optional<AppUser> findByUserAccount(String userAccount);
 
-	boolean existsByUsername(String username);
+	boolean existsByGoogleSubject(String googleSubject);
+
+	Optional<AppUser> findByGoogleSubject(String googleSubject);
 }

@@ -4,8 +4,8 @@
 
 ## 1. 概要
 
-- テーブル数: 17
-- 外部キー制約は `concert_program.concert_id` と `concert_lesson.concert_id`（いずれも `concert.concert_id` を参照）のみ定義している。それ以外のテーブル間の関係は論理的な参照で、制約は張っていない。
+- テーブル数: 19
+- 外部キー制約は既存の演奏会関連に加え、`orch_member` と `concert_member` の人物・団体・演奏会参照にも定義している。
 - 型は「型（日本語）」「PostgreSQL」「SQLite」を併記する。SQLite は将来の対応を想定した型で、日付・日時は ISO 8601 文字列、真偽値は 0/1 で持つ。
 - テーブル命名規則: マスタは `_mst`、リハーサル解析用は `rehea_analysis_<内容>_mst`（`rehearsal` は重複するので省略）。
 - 2026-09-21 にテーブル名を変更した。移行手順は [migration/20260921_rename_tables_and_add_fk.sql](migration/20260921_rename_tables_and_add_fk.sql) を参照。
@@ -52,6 +52,10 @@ erDiagram
     stage_layout ||--o{ concert_program : "layout_id"
     stage_layout ||--o{ stage_layout_seat : "layout_id"
     person |o--o{ stage_layout_seat : "person_id"
+    person ||--o{ orch_member : "person_id (FK)"
+    orch_mst ||--o{ orch_member : "orch_id (FK)"
+    person ||--o{ concert_member : "person_id (FK)"
+    concert ||--o{ concert_member : "oconcert_id (FK)"
 
     orch_mst {
         VARCHAR6 orch_id PK
@@ -91,6 +95,23 @@ erDiagram
         BIGINT layout_id
         BIGINT person_id
     }
+    orch_member {
+        BIGINT person_id PK
+        VARCHAR6 orch_id PK
+        DATE start_date
+        DATE end_date
+        VARCHAR32 main_active_instrument
+        BOOLEAN is_member
+    }
+    concert_member {
+        BIGINT person_id PK
+        VARCHAR12 oconcert_id PK
+        VARCHAR32 main_active_instrument
+        BOOLEAN is_member
+        BOOLEAN is_part_leader
+        BOOLEAN is_concert_master
+        VARCHAR64 coordinator
+    }
     person {
         BIGINT person_id PK
     }
@@ -99,8 +120,9 @@ erDiagram
         VARCHAR12 categ_id PK
     }
     app_user {
-        BIGINT id PK
-        VARCHAR50 username UK
+        VARCHAR50 user_account PK
+        BIGINT person_id FK
+        VARCHAR255 google_subject UK
     }
     rehea_analysis_correction_mst {
         BIGINT id PK
@@ -122,7 +144,7 @@ erDiagram
     }
 ```
 
-`category` / `app_user` / `rehea_analysis_correction_mst` / `rehea_analysis_instrument_keyword_mst` / `rehea_analysis_include_keyword_mst` / `rehea_analysis_exclude_pattern_mst` / `rehea_analysis_measure_pattern_mst` / `rehea_analysis_mark_pattern_mst` は他テーブルとの参照を持たない独立テーブル。
+`category` / `rehea_analysis_correction_mst` / `rehea_analysis_instrument_keyword_mst` / `rehea_analysis_include_keyword_mst` / `rehea_analysis_exclude_pattern_mst` / `rehea_analysis_measure_pattern_mst` / `rehea_analysis_mark_pattern_mst` は他テーブルとの参照を持たない独立テーブル。`app_user` は `person.person_id` を任意で参照する。
 
 ### リレーション一覧
 
@@ -137,6 +159,10 @@ erDiagram
 | stage_layout | concert_program | layout_id | 1配置を複数曲で共用（NULL 可） |
 | stage_layout | stage_layout_seat | layout_id | 1配置 : N座席 |
 | person | stage_layout_seat | person_id | 座席に割り当てた奏者（NULL 可） |
+| person | orch_member | person_id | 団体所属メンバー（**外部キー**） |
+| orch_mst | orch_member | orch_id | 団体所属メンバー（**外部キー**） |
+| person | concert_member | person_id | 演奏会出演メンバー（**外部キー**） |
+| concert | concert_member | oconcert_id -> concert_id | 演奏会出演メンバー（**外部キー**） |
 
 ## 3. テーブル一覧
 
@@ -152,13 +178,15 @@ erDiagram
 | 8 | category | 区分マスタ | categ_type, categ_id |
 | 9 | stage_layout | 舞台配置マスタ | layout_id |
 | 10 | stage_layout_seat | 舞台配置の座席 | seat_id |
-| 11 | app_user | ユーザー（認証用） | id |
-| 12 | rehea_analysis_correction_mst | 誤字訂正辞書 | id |
-| 13 | rehea_analysis_instrument_keyword_mst | 楽器キーワード | id |
-| 14 | rehea_analysis_include_keyword_mst | 抽出対象キーワード | id |
-| 15 | rehea_analysis_exclude_pattern_mst | 除外パターン | id |
-| 16 | rehea_analysis_measure_pattern_mst | 小節パターン | id |
-| 17 | rehea_analysis_mark_pattern_mst | 練習記号パターン | id |
+| 11 | orch_member | 団体所属メンバー | person_id, orch_id |
+| 12 | concert_member | 演奏会出演メンバー | person_id, oconcert_id |
+| 13 | app_user | ユーザー（認証用） | user_account |
+| 14 | rehea_analysis_correction_mst | 誤字訂正辞書 | id |
+| 15 | rehea_analysis_instrument_keyword_mst | 楽器キーワード | id |
+| 16 | rehea_analysis_include_keyword_mst | 抽出対象キーワード | id |
+| 17 | rehea_analysis_exclude_pattern_mst | 除外パターン | id |
+| 18 | rehea_analysis_measure_pattern_mst | 小節パターン | id |
+| 19 | rehea_analysis_mark_pattern_mst | 練習記号パターン | id |
 
 ## 4. テーブル定義
 
@@ -395,14 +423,50 @@ UK: (canonical_name, keyword)
 | 1 | id | ID | 数値型（整数） | BIGINT | INTEGER | 不可 | PK | 自動採番 |
 | 2 | pattern | パターン | 文字列型 | VARCHAR(255) | TEXT | 不可 | UK |  |
 
-### 4.16 rehea_analysis_measure_pattern_mst（小節パターン）
+### 4.18 orch_member（団体所属メンバー）
+
+レイアウトに割り当てられた人物を、レイアウトを使用する演奏会の団体ごとに自動登録する。複合主キーは `person_id, orch_id`。`start_date` の初期値は `1900-01-01`。
+
+| No | 列名 | 論理名 | 型（日本語） | PostgreSQL | SQLite | NULL | キー | 説明 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | person_id | 人物ID | 数値型（整数） | BIGINT | INTEGER | 不可 | PK, FK | person.person_id |
+| 2 | orch_id | 団体ID | 文字列型 | VARCHAR(6) | TEXT | 不可 | PK, FK | orch_mst.orch_id |
+| 3 | start_date | 所属開始日 | 日付型 | DATE | TEXT（YYYY-MM-DD） | 不可 |  | 初期値 1900-01-01 |
+| 4 | end_date | 所属終了日 | 日付型 | DATE | TEXT（YYYY-MM-DD） | 可 |  |  |
+| 5 | main_active_instrument | 主な担当楽器 | 文字列型 | VARCHAR(32) | TEXT | 可 |  |  |
+| 6 | is_member | 団員フラグ | 真偽型 | BOOLEAN | INTEGER（0/1） | 可 |  |  |
+
+### 4.19 concert_member（演奏会出演メンバー）
+
+レイアウトに割り当てられた人物を、そのレイアウトを使用する演奏会ごとに自動登録する。`oconcert_id` は要求された列名を維持し、`concert.concert_id` を参照する。複合主キーは `person_id, oconcert_id`。
+
+| No | 列名 | 論理名 | 型（日本語） | PostgreSQL | SQLite | NULL | キー | 説明 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | person_id | 人物ID | 数値型（整数） | BIGINT | INTEGER | 不可 | PK, FK | person.person_id |
+| 2 | oconcert_id | 演奏会ID | 文字列型 | VARCHAR(12) | TEXT | 不可 | PK, FK | concert.concert_id |
+| 3 | main_active_instrument | 主な担当楽器 | 文字列型 | VARCHAR(32) | TEXT | 可 |  |  |
+| 4 | is_member | 出演メンバーフラグ | 真偽型 | BOOLEAN | INTEGER（0/1） | 可 |  |  |
+| 5 | is_part_leader | パートリーダーフラグ | 真偽型 | BOOLEAN | INTEGER（0/1） | 可 |  |  |
+| 6 | is_concert_master | コンサートマスターフラグ | 真偽型 | BOOLEAN | INTEGER（0/1） | 可 |  |  |
+| 7 | coordinator | コーディネーター | 文字列型 | VARCHAR(64) | TEXT | 可 |  |  |
+
+### 4.21 rehea_analysis_measure_pattern_mst（小節パターン）
 
 | No | 列名 | 論理名 | 型（日本語） | PostgreSQL | SQLite | NULL | キー | 説明 |
 |---|---|---|---|---|---|---|---|---|
 | 1 | id | ID | 数値型（整数） | BIGINT | INTEGER | 不可 | PK | 自動採番 |
 | 2 | pattern | パターン | 文字列型 | VARCHAR(255) | TEXT | 不可 | UK |  |
 
-### 4.17 rehea_analysis_mark_pattern_mst（練習記号パターン）
+### 4.20 レイアウト登録時の自動反映
+
+`StageLayoutService` のレイアウト保存、標準配置への置換、複製が完了した時点で、座席に `person_id` が設定されている人物を同期する。
+
+- レイアウトを使用する `concert_program` から演奏会と団体を特定する。
+- `orch_member` と `concert_member` は複合キーで存在確認し、未登録の場合だけ追加する。
+- 初回登録時は `start_date=1900-01-01`、`is_member=true`、楽器は `person.main_active_instrument` を設定する。
+- 既存行の終了日、役割フラグ、コーディネーターなどの手入力値は上書きしない。
+
+### 4.22 rehea_analysis_mark_pattern_mst（練習記号パターン）
 
 | No | 列名 | 論理名 | 型（日本語） | PostgreSQL | SQLite | NULL | キー | 説明 |
 |---|---|---|---|---|---|---|---|---|

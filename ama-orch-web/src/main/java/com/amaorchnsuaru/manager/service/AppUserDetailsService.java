@@ -22,14 +22,11 @@ public class AppUserDetailsService implements UserDetailsService {
 	}
 
 	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		AppUser appUser = appUserRepository.findByUsername(username)
-				.orElseThrow(() -> new UsernameNotFoundException(
-						"ユーザーが見つかりません: " + username));
+	public UserDetails loadUserByUsername(String userAccount) throws UsernameNotFoundException {
+		AppUser appUser = appUserRepository.findByUserAccount(userAccount)
+				.orElseThrow(() -> new UsernameNotFoundException("ユーザーが見つかりません: " + userAccount));
 		String authority = "ADMIN".equals(appUser.getRole()) ? "ROLE_ADMIN" : "ROLE_USER";
-		return new User(
-				appUser.getUsername(),
-				appUser.getPassword(),
+		return new User(appUser.getUserAccount(), appUser.getPassword(),
 				Collections.singletonList(new SimpleGrantedAuthority(authority)));
 	}
 }

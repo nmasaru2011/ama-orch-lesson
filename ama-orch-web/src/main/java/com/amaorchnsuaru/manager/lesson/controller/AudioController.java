@@ -4,6 +4,7 @@ import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService.AiProvider;
 import com.amaorchnsuaru.manager.lesson.service.AudioTranscriptionService;
+import com.amaorchnsuaru.manager.lesson.service.RehearsalAnalysisDataService;
 import com.amaorchnsuaru.manager.lesson.service.RehearsalSrtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +43,9 @@ public class AudioController {
     @Autowired
     private RehearsalSrtService rehearsalSrtService;
 
+    @Autowired
+    private RehearsalAnalysisDataService rehearsalAnalysisDataService;
+
     // ----------------------------------------------------------------
     // 音声ファイルアップロード
     // ----------------------------------------------------------------
@@ -50,8 +56,12 @@ public class AudioController {
     @PostMapping("/analyze")
     public String analyzeAudio(@RequestParam MultipartFile audioFile,
             @RequestParam(defaultValue = "standard") String analysisMode,
-            @RequestParam(defaultValue = "openai") String aiProvider, Model model,
-            HttpSession session, RedirectAttributes redirectAttributes) {
+            @RequestParam(defaultValue = "openai") String aiProvider,
+            @RequestParam(required = false) Long lessonId,
+            @RequestParam(required = false) String concertId,
+            @RequestParam(required = false) Integer branchNo,
+            @RequestParam(required = false) LocalDate lessonDate, Model model, HttpSession session,
+            RedirectAttributes redirectAttributes) {
 
         if (audioFile == null || audioFile.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "音声ファイルを選択してください。");
@@ -62,6 +72,8 @@ public class AudioController {
         try {
             String srtText = transcriptionService.transcribeToSrt(audioFile);
             List<RehearsalInstruction> instructions = doAnalyze(srtText, analysisMode, aiProvider);
+            rehearsalAnalysisDataService.save(rehearsalAnalysisDataService.hash(srtText),
+                    instructions, lessonId, concertId, branchNo, lessonDate);
 
             Map<String, Integer> instrumentSummary =
                     rehearsalSrtService.countByInstrument(instructions);
@@ -96,13 +108,19 @@ public class AudioController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> receiveChunk(@RequestParam MultipartFile chunk,
             @RequestParam(defaultValue = "standard") String analysisMode,
-            @RequestParam(defaultValue = "openai") String aiProvider, HttpSession session) {
+            @RequestParam(defaultValue = "openai") String aiProvider,
+            @RequestParam(required = false) Long lessonId,
+            @RequestParam(required = false) String concertId,
+            @RequestParam(required = false) Integer branchNo,
+            @RequestParam(required = false) LocalDate lessonDate, HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
         try {
             String extension = mimeToExtension(chunk.getContentType());
             String srtText = transcriptionService.transcribeChunkToSrt(chunk.getBytes(), extension);
             List<RehearsalInstruction> newItems = doAnalyze(srtText, analysisMode, aiProvider);
+            rehearsalAnalysisDataService.save(Instant.now().toString(), newItems, lessonId,
+                    concertId, branchNo, lessonDate);
 
             List<RehearsalInstruction> accumulated = getRealtimeList(session);
             accumulated.addAll(newItems);

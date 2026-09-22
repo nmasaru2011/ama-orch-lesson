@@ -19,7 +19,8 @@ public class FooterAdvice {
     private final GitProperties gitProperties;
     private final AppUserRepository appUserRepository;
 
-    public FooterAdvice(@Nullable GitProperties gitProperties, AppUserRepository appUserRepository) {
+    public FooterAdvice(@Nullable GitProperties gitProperties,
+            AppUserRepository appUserRepository) {
         this.gitProperties = gitProperties;
         this.appUserRepository = appUserRepository;
     }
@@ -48,14 +49,15 @@ public class FooterAdvice {
     @ModelAttribute("displayName")
     public String displayName() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+        if (auth == null || !auth.isAuthenticated()
+                || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
-        String username = auth.getName();
-        return appUserRepository.findByUsername(username)
+        String userAccount = auth.getName();
+        return appUserRepository.findByUserAccount(userAccount)
                 .map(u -> u.getDisplayName() != null && !u.getDisplayName().isBlank()
                         ? u.getDisplayName()
-                        : username)
-                .orElse(username);
+                        : userAccount)
+                .orElse(userAccount);
     }
 }

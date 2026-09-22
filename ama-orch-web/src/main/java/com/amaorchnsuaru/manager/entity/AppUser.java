@@ -15,13 +15,10 @@ import jakarta.persistence.Table;
 public class AppUser extends AuditableEntity {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@Column(name = "user_account", nullable = false, length = 50)
+	private String userAccount;
 
-	@Column(nullable = false, unique = true, length = 50)
-	private String username;
-
-	@Column(nullable = false)
+	@Column
 	private String password;
 
 	@Column(name = "display_name", length = 100)
@@ -30,20 +27,34 @@ public class AppUser extends AuditableEntity {
 	@Column(length = 50)
 	private String role;
 
-	public Long getId() {
-		return id;
+	@Column(name = "person_id")
+	private Long personId;
+
+	@Column(name = "google_subject", unique = true, length = 255)
+	private String googleSubject;
+
+	public String getUserAccount() {
+		return userAccount;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setUserAccount(String userAccount) {
+		this.userAccount = userAccount;
 	}
 
-	public String getUsername() {
-		return username;
+	public Long getPersonId() {
+		return personId;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+	public void setPersonId(Long personId) {
+		this.personId = personId;
+	}
+
+	public String getGoogleSubject() {
+		return googleSubject;
+	}
+
+	public void setGoogleSubject(String googleSubject) {
+		this.googleSubject = googleSubject;
 	}
 
 	public String getPassword() {

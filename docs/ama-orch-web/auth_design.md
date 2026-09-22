@@ -17,7 +17,9 @@
 - 認証方式は、Spring Security のフォームログインを使用する。
 - Web画面はCookieによるセッション認証、APIはBearer Token認証とする。
 - Web画面は`/web/**`、APIは`/api/**`を公開境界とする。
-- 認証情報のユーザー名・パスワードは `app_user` テーブルで管理する。
+- ローカル認証のアカウント名・パスワードは `app_user` テーブルで管理する。
+- `app_user.user_account` を主キーとし、任意で `person_id` に人物マスタを紐付ける。
+- Google OAuth/OIDC認証では、Googleの不変識別子である `sub` を `app_user.google_subject` に保存して同じユーザーへ紐付ける。メールアドレスを識別子や主キーとして使用しない。
 - パスワードは平文で保存せず、`BCryptPasswordEncoder` でハッシュ化する。
 - アプリケーションの通常画面は、認証済みユーザーだけが利用できる。
 - データの登録・更新・削除など管理操作は、`ADMIN` ロールを持つユーザーに限定する。
@@ -49,7 +51,7 @@ flowchart LR
 |---|---|
 | `SecurityConfig` | URL単位の認証・認可、ログイン、ログアウト、CSRF、フレーム制御を設定する |
 | `AuthController` | GET `/web/login` でログイン画面を表示する。認証処理自体はSpring Securityが行う |
-| `AppUserDetailsService` | ユーザー名で `app_user` を検索し、Spring Security用の `UserDetails` に変換する |
+| `AppUserDetailsService` | `user_account` で `app_user` を検索し、Spring Security用の `UserDetails` に変換する |
 | `AppUserRepository` | `app_user` の検索とユーザー名重複確認を提供する |
 | `AppUser` | `app_user` テーブルを表すJPAエンティティ。論理削除済みレコードは対象外とする |
 | `BCryptPasswordEncoder` | 入力パスワードの照合に使用するハッシュエンコーダー |
@@ -84,7 +86,7 @@ Web画面は現在のフォームログインを継続して使用する。ロ�
 
 | パラメーター | 必須 | 説明 |
 |---|---:|---|
-| `username` | ○ | `app_user.username` と照合するユーザー名 |
+| `username` | ○ | `app_user.user_account` と照合するアカウント名 |
 | `password` | ○ | BCryptハッシュと照合するパスワード |
 
 `POST /web/login` はアプリケーションControllerでは処理せず、Spring Securityの認証フィルターが処理する。認証成功時は `/web` に遷移し、認証失敗時は `/web/login?error` に遷移する。
@@ -105,7 +107,7 @@ sequenceDiagram
     User->>Browser: ユーザー名・パスワードを入力
     Browser->>Security: POST /web/login
     Security->>Service: loadUserByUsername(username)
-    Service->>DB: usernameで有効ユーザーを検索
+    Service->>DB: user_accountで有効ユーザーを検索
     DB-->>Service: ユーザー情報・BCryptハッシュ・role
     Service-->>Security: UserDetails
     Security->>Security: BCryptでパスワード照合
@@ -151,6 +153,10 @@ APIの未認証・権限不足は、Web画面のようにログインページ�
 | トークンは有効だが権限不足 | `403 Forbidden` |
 
 API用の認証処理を実装する際は、Web用とは別のSecurity Filter Chainを用意し、`/api/**` にだけBearer認証を適用する。
+
+### 4.6 Google OAuth/OIDCとの関連付け
+
+Googleログイン成功時に受け取るOIDCの `sub` を `app_user.google_subject` と照合する。未登録の場合は、アプリケーション側で既存の `person` と紐付ける確認フローを通してから `person_id` を設定する。Googleの表示名やメールアドレスは表示・連絡先情報として利用できるが、アカウント同一性の判定には `sub` を使う。
 
 ## 5. 認可設計
 

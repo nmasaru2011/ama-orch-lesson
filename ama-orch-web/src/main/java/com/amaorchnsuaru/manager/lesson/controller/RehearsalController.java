@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ import com.amaorchnsuaru.manager.lesson.resource.RehearsalInstruction;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService;
 import com.amaorchnsuaru.manager.lesson.service.AiAnalysisService.AiProvider;
 import com.amaorchnsuaru.manager.lesson.service.RehearsalSrtService;
+import com.amaorchnsuaru.manager.lesson.service.RehearsalAnalysisDataService;
 import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionException;
 import com.amaorchnsuaru.manager.lesson.service.YouTubeCaptionService;
 
@@ -45,6 +47,9 @@ public class RehearsalController {
 	private AiAnalysisService aiAnalysisService;
 
 	@Autowired
+	private RehearsalAnalysisDataService rehearsalAnalysisDataService;
+
+	@Autowired
 	private ObjectMapper objectMapper;
 
 	@GetMapping
@@ -57,7 +62,11 @@ public class RehearsalController {
 			@RequestParam(value = "youtubeUrl", required = false) String youtubeUrl,
 			@RequestParam(value = "analysisMode", defaultValue = "standard") String analysisMode,
 			@RequestParam(value = "aiProvider", defaultValue = "anthropic") String aiProvider,
-			Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+			@RequestParam(value = "lessonId", required = false) Long lessonId,
+			@RequestParam(value = "concertId", required = false) String concertId,
+			@RequestParam(value = "branchNo", required = false) Integer branchNo,
+			@RequestParam(value = "lessonDate", required = false) LocalDate lessonDate, Model model,
+			HttpSession session, RedirectAttributes redirectAttributes) {
 
 		boolean hasUrl = youtubeUrl != null && !youtubeUrl.isBlank();
 
@@ -101,6 +110,9 @@ public class RehearsalController {
 						new ByteArrayInputStream(srtContent.getBytes(StandardCharsets.UTF_8));
 				instructions = rehearsalSrtService.analyze(srtInputStream, youtubeUrl);
 			}
+
+			rehearsalAnalysisDataService.save(rehearsalAnalysisDataService.hash(srtContent),
+					instructions, lessonId, concertId, branchNo, lessonDate);
 
 			Map<String, Integer> instrumentSummary =
 					rehearsalSrtService.countByInstrument(instructions);
